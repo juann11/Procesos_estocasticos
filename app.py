@@ -35,7 +35,7 @@ def nombres(estados):
 def grafica_distancias(datos: pd.DataFrame, epsilon: float | None = None) -> alt.LayerChart:
     series = list(datos["Serie"].unique())
     base = alt.Chart(datos).encode(
-        x=alt.X("Paso:Q", title="Paso t"),
+        x=alt.X("Paso:Q", title="Paso t", axis=alt.Axis(tickMinStep=1, format="d")),
         y=alt.Y("Distancia:Q", title="Distancia a π", scale=alt.Scale(domainMin=0)),
         color=alt.Color(
             "Serie:N",
@@ -44,9 +44,7 @@ def grafica_distancias(datos: pd.DataFrame, epsilon: float | None = None) -> alt
         ),
     )
     capas = [
-        base.mark_line(strokeWidth=2),
-        # Puntos invisibles: agrandan el área donde aparece el tooltip
-        base.mark_circle(size=150, opacity=0).encode(
+        base.mark_line(strokeWidth=2, point=alt.OverlayMarkDef(size=40, filled=True)).encode(
             tooltip=["Serie:N", "Paso:Q", alt.Tooltip("Distancia:Q", format=".4f")]
         ),
     ]
@@ -77,7 +75,10 @@ else:
     n = len(inicial)
 
 etiquetas = [f"E{i + 1}" for i in range(n)]
-st.caption("Cada fila es el estado actual, cada columna el siguiente. Cada fila debe sumar 1.")
+st.caption(
+    "Cada fila es el estado actual, cada columna el siguiente. Cada fila debe sumar 1. "
+    "Para cambiar un valor, haz doble clic en la casilla."
+)
 editada = st.data_editor(
     pd.DataFrame(inicial, index=etiquetas, columns=etiquetas),
     key=f"matriz-{ejemplo}-{n}",
