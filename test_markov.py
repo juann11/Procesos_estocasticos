@@ -72,6 +72,19 @@ def test_periodo_tres_en_ciclo():
     assert resultado.periodo == 3
 
 
+def test_ciclos_de_longitud_2_y_3_dan_cadena_aperiodica():
+    resultado = analizar_cadena([[0, 1, 0], [0.5, 0, 0.5], [1, 0, 0]])
+    assert resultado.converge
+    assert resultado.periodo == 1
+
+
+def test_camino_bipartito_tiene_periodo_dos():
+    P = [[0, 1, 0, 0], [0.5, 0, 0.5, 0], [0, 0.5, 0, 0.5], [0, 0, 1, 0]]
+    resultado = analizar_cadena(P)
+    assert not resultado.converge
+    assert resultado.periodo == 2
+
+
 def test_cadena_con_dos_estados_absorbentes_no_converge():
     P = [[1, 0, 0], [0.3, 0.4, 0.3], [0, 0, 1]]
     resultado = analizar_cadena(P)
