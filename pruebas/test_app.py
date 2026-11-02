@@ -2,7 +2,8 @@ from streamlit.testing.v1 import AppTest
 
 
 def abrir(ejemplo=None):
-    app = AppTest.from_file("app.py", default_timeout=30).run()
+    # El primer arranque en frío de la máquina puede pasar de 30 s
+    app = AppTest.from_file("../simulador/app.py", default_timeout=120).run()
     if ejemplo:
         app.selectbox(key="ejemplo").select(ejemplo).run()
     assert not app.exception
