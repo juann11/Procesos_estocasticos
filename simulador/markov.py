@@ -1,6 +1,7 @@
 """Lógica de cadenas de Markov: validación, convergencia, estado estable y mixing time."""
 from collections import deque
 from dataclasses import dataclass
+from fractions import Fraction
 from math import gcd
 
 import numpy as np
@@ -21,6 +22,23 @@ class Analisis:
 class Mezcla:
     t_mix: int | None  # None si no se alcanzó epsilon dentro de max_pasos
     distancias: list[float]
+
+
+def leer_matriz(celdas) -> tuple[np.ndarray, list[str]]:
+    """Convierte el texto de la tabla a números; acepta 0.25, 0,25 y 1/3."""
+    errores = []
+    P = np.full((len(celdas), len(celdas[0])), np.nan)
+    for i, fila in enumerate(celdas):
+        for j, celda in enumerate(fila):
+            texto = celda.strip() if isinstance(celda, str) else ""
+            if not texto:
+                errores.append(f"Fila {i + 1}, columna {j + 1} está vacía.")
+                continue
+            try:
+                P[i, j] = float(Fraction(texto.replace(",", ".")))
+            except (ValueError, ZeroDivisionError, OverflowError):
+                errores.append(f"Fila {i + 1}, columna {j + 1}: «{texto}» no es un número.")
+    return P, errores
 
 
 def validar_matriz(P) -> list[str]:
@@ -135,3 +153,18 @@ def simular(P, estado_inicial: int, caminantes: int, pasos: int, semilla=None) -
         estados = (azar >= acumulada[estados]).sum(axis=1)
         empirica[t] = np.bincount(estados, minlength=n) / caminantes
     return empirica
+
+
+def segundo_valor_propio(P) -> float:
+    """Módulo del segundo mayor valor propio: d(t) decae aproximadamente como |λ₂|^t."""
+    return float(np.sort(np.abs(np.linalg.eigvals(np.array(P, dtype=float))))[-2])
+
+
+def grafo_dot(P, clases_cerradas: list[list[int]]) -> str:
+    """Grafo de transiciones en formato DOT; las clases cerradas llevan doble círculo."""
+    P = np.array(P, dtype=float)
+    cerrados = {estado for clase in clases_cerradas for estado in clase}
+    lineas = ["digraph {", "rankdir=LR;", 'bgcolor="transparent";', "node [shape=circle];"]
+    lineas += [f"E{i + 1} [peripheries={2 if i in cerrados else 1}];" for i in range(len(P))]
+    lineas += [f'E{i + 1} -> E{j + 1} [label="{P[i, j]:.3g}"];' for i, j in zip(*np.nonzero(P))]
+    return "\n".join(lineas + ["}"])

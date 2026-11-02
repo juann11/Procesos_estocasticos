@@ -9,7 +9,10 @@ from markov import (
     distancia_tv,
     distribucion_estacionaria,
     evolucion_exacta,
+    grafo_dot,
+    leer_matriz,
     mixing_time,
+    segundo_valor_propio,
     simular,
     validar_matriz,
 )
@@ -26,6 +29,7 @@ EJEMPLOS = {
 AZUL = "#2a78d6"
 NARANJA = "#eb6834"
 MAX_PUNTOS_GRAFICA = 2000
+MAX_ESTADOS_GRAFO = 8  # con más estados las flechas se vuelven ilegibles
 
 
 def nombres(estados):
@@ -69,24 +73,23 @@ st.header("1. Matriz estocástica")
 ejemplo = st.selectbox("Matriz de partida", list(EJEMPLOS), key="ejemplo")
 if ejemplo == PERSONALIZADA:
     n = st.number_input("Número de estados", min_value=2, max_value=12, value=3)
-    inicial = np.full((n, n), 1 / n)
+    inicial = np.full((n, n), f"1/{n}")
 else:
-    inicial = np.array(EJEMPLOS[ejemplo])
+    inicial = np.array(EJEMPLOS[ejemplo]).astype(str)
     n = len(inicial)
 
 etiquetas = [f"E{i + 1}" for i in range(n)]
 st.caption(
     "Cada fila es el estado actual, cada columna el siguiente. Cada fila debe sumar 1. "
-    "Para cambiar un valor, haz doble clic en la casilla."
+    "Para cambiar un valor, haz doble clic en la casilla. Acepta decimales (0.25 o 0,25) y fracciones (1/3)."
 )
 editada = st.data_editor(
     pd.DataFrame(inicial, index=etiquetas, columns=etiquetas),
     key=f"matriz-{ejemplo}-{n}",
     width="stretch",
 )
-P = editada.to_numpy(dtype=float)
-
-errores = validar_matriz(P)
+P, errores = leer_matriz(editada.to_numpy().tolist())
+errores = errores or validar_matriz(P)
 if errores:
     for error in errores:
         st.error(error)
@@ -113,6 +116,9 @@ st.write("**Clases comunicantes:** " + " · ".join(f"{{{nombres(c)}}}" for c in 
 transitorios = [c for c in analisis.clases if c not in analisis.clases_cerradas]
 if transitorios:
     st.write("**Clases transitorias:** " + " · ".join(f"{{{nombres(c)}}}" for c in transitorios))
+if n <= MAX_ESTADOS_GRAFO:
+    st.graphviz_chart(grafo_dot(P, analisis.clases_cerradas))
+    st.caption("Cada flecha es una transición posible. El doble círculo marca los estados de clases cerradas.")
 if not analisis.converge:
     st.stop()
 
@@ -139,11 +145,17 @@ st.header("4. Mixing time")
 epsilon = st.number_input(
     "Tolerancia ε", min_value=0.001, max_value=0.5, value=0.25, step=0.01, format="%.3f"
 )
-mezcla = mixing_time(P, epsilon)
+mezcla = st.cache_data(mixing_time, show_spinner="Calculando el mixing time…")(P, epsilon)
+columna_mezcla, columna_lambda = st.columns(2)
 if mezcla.t_mix is None:
     st.warning(f"No se alcanzó ε en {len(mezcla.distancias) - 1:,} pasos: la cadena mezcla muy lento.")
 else:
-    st.metric(f"Mixing time para ε = {epsilon:g}", mezcla.t_mix, help="Pasos hasta que d(t) ≤ ε")
+    columna_mezcla.metric(f"Mixing time para ε = {epsilon:g}", mezcla.t_mix, help="Pasos hasta que d(t) ≤ ε")
+columna_lambda.metric(
+    "Segundo valor propio |λ₂|",
+    f"{segundo_valor_propio(P):.4f}",
+    help="d(t) decae aproximadamente como |λ₂|^t: entre más cerca de 1, más lenta es la mezcla.",
+)
 curva = pd.DataFrame(
     {"Paso": range(len(mezcla.distancias)), "Distancia": mezcla.distancias, "Serie": "d(t)"}
 )
@@ -156,11 +168,11 @@ st.write("Lanza caminantes por la cadena y compara lo observado con la teoría."
 col1, col2, col3 = st.columns(3)
 inicio = col1.selectbox("Estado inicial", etiquetas)
 caminantes = col2.select_slider("Caminantes", [100, 1000, 10_000, 100_000], value=10_000)
-sugeridos = max(20, 2 * (mezcla.t_mix or 100))
+sugeridos = 200 if mezcla.t_mix is None else max(20, 2 * mezcla.t_mix)
 pasos = col3.number_input("Pasos", min_value=1, max_value=1000, value=min(sugeridos, 1000))
 
 estado = etiquetas.index(inicio)
-empirica = simular(P, estado, caminantes, pasos, semilla=42)
+empirica = st.cache_data(simular, show_spinner="Simulando…")(P, estado, caminantes, pasos, semilla=42)
 exacta = evolucion_exacta(P, estado, pasos)
 comparacion = pd.concat(
     pd.DataFrame({"Paso": range(pasos + 1), "Distancia": distancia_tv(filas, pi, axis=1), "Serie": serie})

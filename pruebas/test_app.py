@@ -31,3 +31,14 @@ def test_dos_clases_cerradas_explica_por_que_no_converge():
     app = abrir("Dos estados absorbentes")
     assert "2 clases cerradas" in textos(app.warning)
     assert not app.metric
+
+
+def test_matriz_personalizada_arranca_con_fracciones_validas():
+    app = abrir("Personalizada")
+    assert "alcanza" in textos(app.success)
+    assert app.metric[0].value == "1"
+
+
+def test_muestra_el_segundo_valor_propio():
+    app = abrir("Regular (2 estados)")
+    assert app.metric[1].value == "0.4000"

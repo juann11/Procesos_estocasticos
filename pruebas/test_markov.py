@@ -7,7 +7,10 @@ from markov import (
     distancia_tv,
     distribucion_estacionaria,
     evolucion_exacta,
+    grafo_dot,
+    leer_matriz,
     mixing_time,
+    segundo_valor_propio,
     simular,
     validar_matriz,
 )
@@ -188,3 +191,61 @@ def test_evolucion_exacta_coincide_con_potencias_de_la_matriz():
     evolucion = evolucion_exacta(REGULAR, estado_inicial=1, pasos=3)
     assert evolucion[0] == pytest.approx([0, 1])
     assert evolucion[3] == pytest.approx(np.linalg.matrix_power(np.array(REGULAR), 3)[1])
+
+
+# Lectura de la tabla: decimales, coma decimal y fracciones
+
+
+def test_lee_decimales_comas_y_fracciones():
+    P, errores = leer_matriz([["0.25", "3/4"], ["0,5", " 1/2 "]])
+    assert errores == []
+    assert P.tolist() == [[0.25, 0.75], [0.5, 0.5]]
+
+
+def test_tres_tercios_en_fraccion_forman_una_fila_valida():
+    P, errores = leer_matriz([["1/3", "1/3", "1/3"]] * 3)
+    assert errores == []
+    assert validar_matriz(P) == []
+
+
+def test_lectura_indica_la_casilla_que_no_es_un_numero():
+    _, errores = leer_matriz([["0.5", "hola"], ["0.5", "0.5"]])
+    assert errores == ["Fila 1, columna 2: «hola» no es un número."]
+
+
+def test_lectura_rechaza_division_por_cero_y_numeros_gigantes():
+    _, errores = leer_matriz([["1/0", "1e999"], ["0.5", "0.5"]])
+    assert len(errores) == 2
+
+
+def test_lectura_indica_las_casillas_vacias():
+    _, errores = leer_matriz([["", None], ["0.5", float("nan")]])
+    assert errores == [
+        "Fila 1, columna 1 está vacía.",
+        "Fila 1, columna 2 está vacía.",
+        "Fila 2, columna 2 está vacía.",
+    ]
+
+
+# Velocidad de convergencia y grafo
+
+
+def test_segundo_valor_propio_coincide_con_el_ejemplo_a_mano():
+    assert segundo_valor_propio(REGULAR) == pytest.approx(0.4)
+
+
+def test_segundo_valor_propio_es_cero_si_mezcla_en_un_paso():
+    assert segundo_valor_propio([[0.5, 0.5], [0.5, 0.5]]) == pytest.approx(0, abs=1e-12)
+
+
+def test_grafo_dibuja_solo_las_transiciones_posibles():
+    P = [[0.5, 0.5], [0, 1]]
+    dot = grafo_dot(P, [[1]])
+    assert 'E1 -> E2 [label="0.5"]' in dot
+    assert "E2 -> E1" not in dot
+
+
+def test_grafo_marca_con_doble_circulo_las_clases_cerradas():
+    dot = grafo_dot([[0.5, 0.5], [0, 1]], [[1]])
+    assert "E2 [peripheries=2" in dot
+    assert "E1 [peripheries=1" in dot
