@@ -9,7 +9,7 @@ textColor = "#0F172A"
 toolbarMode = "minimal"
 
 [server]
-headless = true
+headless = false
 address = "localhost"
 
 [browser]
