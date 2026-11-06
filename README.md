@@ -9,7 +9,7 @@ Trabajo Final de Procesos Estocásticos. Dada una matriz estocástica, determina
 | `simulador/app.py` | Interfaz web en Streamlit |
 | `simulador/markov.py` | Lógica matemática |
 | `pruebas/` | Pruebas automáticas |
-| `documentos/` | Reporte, diapositivas en PDF y notas del orador |
+| `documentos/` | Reporte, diapositivas en PDF, notas del orador y guía de exposición |
 
 ## Cómo correrlo
 
