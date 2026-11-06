@@ -161,10 +161,18 @@ def segundo_valor_propio(P) -> float:
 
 
 def grafo_dot(P, clases_cerradas: list[list[int]]) -> str:
-    """Grafo de transiciones en formato DOT; las clases cerradas llevan doble círculo."""
+    """Grafo de transiciones en formato DOT: clases cerradas con doble círculo y color,
+    flechas más gruesas cuanto más probable es la transición."""
     P = np.array(P, dtype=float)
     cerrados = {estado for clase in clases_cerradas for estado in clase}
     lineas = ["digraph {", "rankdir=LR;", 'bgcolor="transparent";', "node [shape=circle];"]
-    lineas += [f"E{i + 1} [peripheries={2 if i in cerrados else 1}];" for i in range(len(P))]
-    lineas += [f'E{i + 1} -> E{j + 1} [label="{P[i, j]:.3g}"];' for i, j in zip(*np.nonzero(P))]
+    lineas += [
+        f'E{i + 1} [peripheries=2, style=filled, fillcolor="#DCE6F1"];' if i in cerrados
+        else f"E{i + 1} [peripheries=1];"
+        for i in range(len(P))
+    ]
+    lineas += [
+        f'E{i + 1} -> E{j + 1} [label="{P[i, j]:.3g}", penwidth={1 + 3 * P[i, j]:.2f}];'
+        for i, j in zip(*np.nonzero(P))
+    ]
     return "\n".join(lineas + ["}"])

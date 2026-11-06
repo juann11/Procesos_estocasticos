@@ -241,7 +241,7 @@ def test_segundo_valor_propio_es_cero_si_mezcla_en_un_paso():
 def test_grafo_dibuja_solo_las_transiciones_posibles():
     P = [[0.5, 0.5], [0, 1]]
     dot = grafo_dot(P, [[1]])
-    assert 'E1 -> E2 [label="0.5"]' in dot
+    assert 'E1 -> E2 [label="0.5"' in dot
     assert "E2 -> E1" not in dot
 
 
@@ -249,3 +249,17 @@ def test_grafo_marca_con_doble_circulo_las_clases_cerradas():
     dot = grafo_dot([[0.5, 0.5], [0, 1]], [[1]])
     assert "E2 [peripheries=2" in dot
     assert "E1 [peripheries=1" in dot
+
+
+def test_grafo_rellena_de_color_los_estados_de_clases_cerradas():
+    lineas = grafo_dot([[0.5, 0.5], [0, 1]], [[1]]).splitlines()
+    assert "fillcolor" in next(l for l in lineas if l.startswith("E2 ["))
+    assert "fillcolor" not in next(l for l in lineas if l.startswith("E1 ["))
+
+
+def test_grafo_dibuja_mas_gruesas_las_transiciones_mas_probables():
+    import re
+
+    dot = grafo_dot([[0.9, 0.1], [0.5, 0.5]], [[0, 1]])
+    grosor = {a: float(g) for a, g in re.findall(r"(E\d -> E\d) \[.*?penwidth=([\d.]+)", dot)}
+    assert grosor["E1 -> E1"] > grosor["E1 -> E2"]

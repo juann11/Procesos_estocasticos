@@ -4,6 +4,10 @@ primaryColor = "#1E3A5F"
 backgroundColor = "#F8FAFC"
 secondaryBackgroundColor = "#E9EEF5"
 textColor = "#0F172A"
+font = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap, sans-serif"
+headingFont = "EB Garamond:https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;600&display=swap, serif"
+baseRadius = "0.6rem"
+borderColor = "#D4DAE3"
 
 [client]
 toolbarMode = "minimal"
