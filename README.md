@@ -6,64 +6,155 @@
 
 Aplicación web que analiza una cadena de Markov a partir de su matriz estocástica: determina si se alcanza un estado estable, calcula la distribución estacionaria y el **mixing time**, y contrasta la teoría con una simulación Monte Carlo.
 
-Trabajo Final de **Procesos Estocásticos** (2026).
+Trabajo Final de **Procesos Estocásticos** (2026), desarrollado por Juan José Ospina y Geronimo Gaviria.
 
 ![Resumen de la aplicación](documentos/imagenes/resumen.png)
 
 ## Contenido
 
-- [Funcionalidades](#funcionalidades)
-- [Fundamento matemático](#fundamento-matemático)
+- [El taller](#el-taller)
+- [Qué es el mixing time](#qué-es-el-mixing-time)
+- [Cómo se resuelve cada ítem](#cómo-se-resuelve-cada-ítem)
+- [Ejemplo resuelto a mano](#ejemplo-resuelto-a-mano)
+- [Validación](#validación)
 - [Instalación](#instalación)
 - [Uso](#uso)
-- [Pruebas](#pruebas)
 - [Estructura del proyecto](#estructura-del-proyecto)
+- [Alcance y límites](#alcance-y-límites)
 - [Documentación](#documentación)
-- [Autores](#autores)
 - [Referencias](#referencias)
 
-## Funcionalidades
+## El taller
 
-El programa cubre los cinco ítems del enunciado:
+**Objetivos:**
 
-| Ítem | Qué hace |
+1. Familiarizarse con el concepto de mixing time.
+2. Desarrollar un simulador de cadenas de Markov que permita encontrar la distribución estacionaria y el tiempo de mezcla.
+
+**Requisitos del programa y dónde se cumple cada uno:**
+
+| # | Requisito del enunciado | Dónde está | Función principal |
+|---|---|---|---|
+| 1 | Solicitar al usuario la matriz estocástica | Sección 1 de la app | `leer_matriz`, `validar_matriz` |
+| 2 | Determinar si se puede alcanzar un estado estable | Sección 2 | `analizar_cadena` |
+| 3 | Si el ítem 2 es positivo, calcular y mostrar la distribución estable | Sección 3 | `distribucion_estacionaria` |
+| 4 | Calcular y mostrar el mixing time | Sección 4 | `mixing_time` |
+| 5 | Incluir una funcionalidad particular | Sección 5: simulación Monte Carlo | `simular` |
+
+Todas las funciones están en [`simulador/markov.py`](simulador/markov.py), y la interfaz en [`simulador/app.py`](simulador/app.py).
+
+**Entregables:**
+
+| Entregable | Archivo |
 |---|---|
-| 1. Entrada | Tabla editable de hasta 12 estados. Acepta decimales (`0.25` o `0,25`) y fracciones (`1/3`), y señala la casilla o la fila exacta que tiene un error. |
-| 2. Estado estable | Calcula las clases comunicantes, las clases cerradas y el período, y explica por qué no hay estado estable cuando no lo hay. |
-| 3. Distribución estacionaria | Calcula π y la muestra en tabla y en gráfico de barras. |
-| 4. Mixing time | Calcula t<sub>mix</sub>(ε) con ε ajustable, grafica d(t) y muestra el segundo valor propio \|λ₂\|. |
-| 5. Funcionalidad propia | Simulación Monte Carlo que compara la convergencia empírica con la teórica. |
+| Reporte de especificación | [`documentos/Reporte_especificacion.docx`](documentos/Reporte_especificacion.docx) |
+| Programa | Este repositorio |
+| Exposición | [`documentos/Diapositivas.pdf`](documentos/Diapositivas.pdf) y [`documentos/Guia_de_exposicion.md`](documentos/Guia_de_exposicion.md) |
 
-Además, la interfaz incluye:
+## Qué es el mixing time
 
-- Tarjetas de resumen con las respuestas principales.
-- Mapa de calor de la matriz y grafo de transiciones.
-- Animación paso a paso de la convergencia hacia π.
-- Una explicación desplegable en cada sección.
+**Objetivo.** El mixing time mide cuántos pasos necesita una cadena de Markov para olvidar su estado inicial, es decir, para que su distribución quede lo bastante cerca de la distribución estacionaria π, sin importar en qué estado empezó. "Lo bastante cerca" lo define una tolerancia ε.
 
-| Grafo de transiciones | Animación de convergencia |
-|---|---|
-| ![Grafo con dos clases cerradas](documentos/imagenes/grafo.png) | ![Distribución en el paso t frente a π](documentos/imagenes/animacion.png) |
+**Cómo se mide la cercanía.** Se usa la distancia de variación total entre dos distribuciones, que es la mayor diferencia de probabilidad que pueden asignarle a un mismo evento:
 
-## Fundamento matemático
+$$\lVert \mu - \nu \rVert_{TV} = \tfrac{1}{2} \sum_x \lvert \mu(x) - \nu(x) \rvert$$
 
-**Estado estable.** Una cadena finita converge a una única distribución, sin importar el estado inicial, cuando tiene exactamente **una clase cerrada** y esa clase es **aperiódica**. Los estados transitorios no impiden la convergencia.
+**Cómo se calcula.** La fila x de Pᵗ es la distribución de la cadena después de t pasos si arrancó en x. Se toma el peor caso entre todos los estados iniciales, y el mixing time es el primer paso en que esa distancia baja de ε:
 
-**Distribución estacionaria.** Es la solución de
+$$d(t) = \max_x \lVert P^t(x, \cdot) - \pi \rVert_{TV}, \qquad t_{mix}(\varepsilon) = \min\{\, t \ge 0 : d(t) \le \varepsilon \,\}$$
 
-$$\pi P = \pi, \qquad \sum_i \pi_i = 1,$$
+Por defecto se usa ε = 1/4, el valor convencional en la literatura, y el usuario puede cambiarlo.
 
-que se resuelve por mínimos cuadrados.
+## Cómo se resuelve cada ítem
 
-**Mixing time.** Con la distancia de variación total
+### Ítem 1. Solicitar la matriz estocástica
 
-$$\lVert \mu - \nu \rVert_{TV} = \tfrac{1}{2} \sum_x \lvert \mu(x) - \nu(x) \rvert,$$
+El usuario elige en la barra lateral una matriz de ejemplo o una personalizada de hasta 12 estados, y la edita en una tabla.
 
-se define la peor distancia a π después de t pasos y el primer paso en que baja de la tolerancia ε:
+- Cada casilla acepta decimales (`0.25` o `0,25`) y fracciones (`1/3`). Las fracciones evitan que una fila de tercios escrita como `0.3333` sume 0.9999 y se rechace.
+- Antes de calcular se valida que la matriz sea cuadrada, que no tenga casillas vacías ni valores negativos, y que cada fila sume 1 (con tolerancia de 10⁻⁹ por redondeo).
+- Si algo falla, el programa indica la casilla o la fila exacta.
 
-$$d(t) = \max_x \lVert P^t(x, \cdot) - \pi \rVert_{TV}, \qquad t_{mix}(\varepsilon) = \min\{\, t \ge 0 : d(t) \le \varepsilon \,\}.$$
+### Ítem 2. Determinar si se alcanza un estado estable
 
-Por defecto se usa ε = 1/4, con un límite de 100 000 pasos.
+Una cadena finita converge a una única distribución, sin importar el estado inicial, cuando tiene **exactamente una clase cerrada** y esa clase es **aperiódica**. Los estados transitorios no impiden la convergencia, porque la cadena termina abandonándolos.
+
+El programa lo decide en cuatro pasos:
+
+1. **Grafo:** hay una flecha i → j cuando P(i, j) > 0.
+2. **Clases comunicantes:** con el algoritmo de Warshall se calcula qué estados alcanzan a cuáles; dos estados están en la misma clase si cada uno alcanza al otro.
+3. **Clases cerradas:** son aquellas de las que no sale ninguna flecha.
+4. **Período:** se recorre la clase cerrada con BFS y se calcula el máximo común divisor de nivel(u) + 1 − nivel(v) en cada flecha u → v. Equivale al MCD de las longitudes de los ciclos.
+
+| Caso | ¿Se alcanza? | Qué muestra el programa |
+|---|---|---|
+| Una clase cerrada, período 1 | Sí | Calcula π y el mixing time |
+| Una clase cerrada, período 2 o más | No | Indica que la cadena oscila y su período |
+| Dos o más clases cerradas | No | Indica que el resultado depende del estado inicial y lista las clases |
+
+Además, dibuja el grafo de transiciones con las clases cerradas resaltadas.
+
+![Grafo con dos clases cerradas](documentos/imagenes/grafo.png)
+
+### Ítem 3. Calcular y mostrar la distribución de estado estable
+
+Solo se calcula si el ítem 2 es positivo. Se resuelve el sistema
+
+$$\pi P = \pi, \qquad \sum_i \pi_i = 1$$
+
+Equivale a (Pᵀ − I)π = 0 más la ecuación de normalización: n + 1 ecuaciones con n incógnitas, que se resuelven por mínimos cuadrados (`numpy.linalg.lstsq`). El resultado se muestra en una tabla y en un gráfico de barras.
+
+### Ítem 4. Calcular y mostrar el mixing time
+
+Se aplica el procedimiento de la sección [Qué es el mixing time](#qué-es-el-mixing-time) de forma iterativa:
+
+1. Empezar con t = 0 y P⁰ = I (matriz identidad).
+2. Calcular d(t).
+3. Si d(t) ≤ ε, el mixing time es t.
+4. Si no, multiplicar Pᵗ⁺¹ = Pᵗ · P y volver al paso 2.
+
+Como d(t) nunca aumenta con t, el primer t que cumple la condición es el mínimo. Si no se alcanza en 100 000 pasos, el programa lo avisa en vez de inventar un número.
+
+La app muestra:
+
+- El valor del mixing time.
+- La curva d(t) con ε y t_mix marcados.
+- El segundo valor propio |λ₂|, que explica la velocidad, porque d(t) decae aproximadamente como |λ₂|ᵗ.
+- Una animación paso a paso de cómo la distribución se acerca a π.
+
+![Distribución en el paso t frente a π](documentos/imagenes/animacion.png)
+
+### Ítem 5. Funcionalidad particular: simulación Monte Carlo
+
+Además del cálculo exacto, el programa simula la cadena con N caminantes:
+
+1. Todos arrancan en el estado inicial elegido.
+2. En cada paso, cada caminante sortea un número u entre 0 y 1, y el tramo de la fila acumulada de P donde cae u decide su siguiente estado.
+3. Se cuenta cuántos caminantes hay en cada estado y se compara esa distribución empírica con la teórica.
+
+Sirve como verificación independiente del álgebra. El ruido de la simulación baja como 1/√N: con 10 veces más caminantes se reduce unas 3 veces.
+
+## Ejemplo resuelto a mano
+
+Para la matriz
+
+$$P = \begin{pmatrix} 0.9 & 0.1 \\ 0.5 & 0.5 \end{pmatrix}$$
+
+se tiene π = (5/6, 1/6) = (0.8333, 0.1667), los valores propios son 1 y 0.4, y d(t) = (5/6) · 0.4ᵗ:
+
+| t | d(t) | ¿d(t) ≤ 1/4? |
+|---|---|---|
+| 0 | 0.8333 | No |
+| 1 | 0.3333 | No |
+| 2 | 0.1333 | Sí |
+
+Por lo tanto, t<sub>mix</sub>(1/4) = 2, igual que el resultado del programa. Este caso también está como prueba automática.
+
+## Validación
+
+- **48 pruebas automáticas** escritas antes del código: 40 cubren la lógica y 8 la interfaz, usando el probador de Streamlit.
+- **Dos cadenas calculadas a mano** que coinciden con el programa: la regular de 2 estados (mixing time 2) y la absorbente con transitorios (mixing time 5).
+- **Prueba de las pruebas:** se introdujeron 19 errores a propósito en la lógica y las pruebas detectaron 16. Los 3 restantes son protecciones contra redondeo casi imposibles de provocar.
 
 ## Instalación
 
@@ -91,13 +182,11 @@ El navegador se abre en `http://localhost:8501`. En la barra lateral se elige un
 | Periódica (2 estados) | No converge: período 2 |
 | Dos estados absorbentes | No converge: dos clases cerradas |
 
-## Pruebas
+Para correr las pruebas:
 
 ```bash
 uv run python -m pytest
 ```
-
-Son 48 pruebas: 40 cubren la lógica matemática y 8 la interfaz, usando el probador de Streamlit.
 
 ## Estructura del proyecto
 
@@ -121,17 +210,24 @@ Son 48 pruebas: 40 cubren la lógica matemática y 8 la interfaz, usando el prob
 
 La lógica (`markov.py`) no depende de la interfaz, así que se prueba por separado.
 
+## Alcance y límites
+
+| Aspecto | Límite | Por qué |
+|---|---|---|
+| Estados | Hasta 12 | La tabla sigue legible |
+| Grafo | Hasta 8 estados | Con más, las flechas se vuelven ilegibles |
+| Mixing time | 100 000 pasos | Avisa si la cadena no alcanza ε |
+| Tolerancia ε | De 0.001 a 0.5 | Evita que el redondeo domine |
+| Simulación | Hasta 1000 pasos y 100 000 caminantes | Mantiene la app ágil |
+
+El programa trabaja con cadenas de estados finitos y probabilidades de transición que no cambian con el tiempo.
+
 ## Documentación
 
 - [Reporte de especificación](documentos/Reporte_especificacion.docx)
 - [Diapositivas](documentos/Diapositivas.pdf)
 - [Notas del orador](documentos/Notas_del_orador.md)
 - [Guía de exposición](documentos/Guia_de_exposicion.md)
-
-## Autores
-
-- Juan José Ospina
-- Geronimo Gaviria
 
 ## Referencias
 
