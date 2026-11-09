@@ -10,10 +10,10 @@ Material:
 
 ## 1. Antes de empezar (15 minutos antes)
 
-1. Abran una terminal en la carpeta del proyecto y corran `uv run streamlit run simulador/app.py`. El navegador se abre solo en `http://localhost:8501`. La primera vez del día puede tardar más de 30 segundos, por eso se abre antes.
+1. Abran una terminal en la carpeta del proyecto y corran `uv run python -m streamlit run simulador/app.py`. El navegador se abre solo en `http://localhost:8501`. La primera vez del día puede tardar más de 30 segundos, por eso se abre antes.
 2. Si sale `ConnectionResetError [WinError 10054]` en rojo en la terminal, ignórenlo: es un aviso de Python en Windows y no afecta la app.
-3. Si dice que el puerto 8501 está ocupado, cierren la otra terminal con `Ctrl+C` o usen `uv run streamlit run simulador/app.py --server.port 8502`.
-4. Dejen lista otra terminal con `uv run pytest` por si el profesor pide ver las pruebas: deben salir **48 passed**.
+3. Si dice que el puerto 8501 está ocupado, cierren la otra terminal con `Ctrl+C` o usen `uv run python -m streamlit run simulador/app.py --server.port 8502`.
+4. Dejen lista otra terminal con `uv run python -m pytest` por si el profesor pide ver las pruebas: deben salir **48 passed**.
 5. En Teams compartan la **ventana** del navegador o la pantalla completa, y suban el zoom del navegador si se ve pequeño (`Ctrl` + `+`).
 6. Tengan el PDF de las diapositivas abierto como respaldo por si falla la app.
 
