@@ -240,7 +240,7 @@ Háganlo **15 minutos antes**, no durante la exposición:
    uv run python -m streamlit run simulador/app.py
    ```
 
-3. El navegador se abre solo en `http://localhost:8501`. La primera vez del día puede tardar más de 30 segundos.
+3. Abran `http://localhost:8501` en el navegador. La primera vez del día puede tardar más de 30 segundos. También está la versión en línea: https://markov-medellin.streamlit.app
 4. Si sale en rojo `ConnectionResetError [WinError 10054]`, ignórenlo: es un aviso de Windows y no afecta la app.
 5. Si dice que el puerto 8501 está ocupado, cierren la otra terminal con `Ctrl+C`, o usen otro puerto:
 

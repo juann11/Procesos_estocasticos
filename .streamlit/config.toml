@@ -13,8 +13,7 @@ borderColor = "#D4DAE3"
 toolbarMode = "minimal"
 
 [server]
-headless = false
-address = "localhost"
+headless = true
 
 [browser]
 gatherUsageStats = false

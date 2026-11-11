@@ -189,7 +189,7 @@ uv sync
 uv run python -m streamlit run simulador/app.py
 ```
 
-El navegador se abre en `http://localhost:8501`. En el menú de la izquierda hay dos páginas: **Simulador**, donde se elige una matriz de ejemplo o una personalizada y la tolerancia ε (para cambiar un valor, doble clic en la casilla), y **Caso real: clima de Medellín**.
+Abre `http://localhost:8501` en el navegador, o usa la versión en línea: https://markov-medellin.streamlit.app. En el menú de la izquierda hay dos páginas: **Simulador**, donde se elige una matriz de ejemplo o una personalizada y la tolerancia ε (para cambiar un valor, doble clic en la casilla), y **Caso real: clima de Medellín**.
 
 | Ejemplo | Resultado esperado |
 |---|---|
