@@ -23,7 +23,7 @@ Presentación corta, solo del caso real (10 diapositivas, unos 10 minutos más l
 
 ### 4. Ítem 1: la matriz se estima contando · JJ · 60 s
 
-> Este es el paso clave. Recorrimos los días y anotamos, para cada uno, qué tipo de día vino después. Por ejemplo, de 257 aguaceros, 118 fueron seguidos por otro aguacero. Al dividir cada fila entre su total obtenemos probabilidades: 118 entre 257 da 0.459. Cada fila suma 1, así que es una matriz estocástica. En palabras sencillas: es una tabla de "qué suele venir después".
+> Este es el paso clave. Recorrimos los días y anotamos, para cada uno, qué tipo de día vino después. Por ejemplo, de 257 aguaceros, 118 fueron seguidos por otro aguacero. Al dividir cada fila entre su total obtenemos probabilidades: 118 entre 257 da 0.459. Cada fila suma 1, así que es una matriz estocástica. Es decir: es una tabla de "qué suele venir después".
 
 ### 5. Ítem 2: la cadena sí se estabiliza · JJ · 45 s
 
@@ -33,7 +33,7 @@ Presentación corta, solo del caso real (10 diapositivas, unos 10 minutos más l
 
 ### 6. Ítem 3: el clima a largo plazo · GG · 45 s
 
-> Gracias. Resolviendo πP = π obtenemos que, a largo plazo, Medellín tiene 29 % de días secos, 47 % de lluvia ligera y 23 % de lluvia fuerte. Lo comparamos con lo que pasó de verdad en los tres años y es prácticamente igual. En palabras sencillas: π es el promedio a largo plazo. Si escogemos un día al azar, hay unas 29 de 100 posibilidades de que esté seco.
+> Gracias. Resolviendo πP = π obtenemos que, a largo plazo, Medellín tiene 29 % de días secos, 47 % de lluvia ligera y 23 % de lluvia fuerte. Lo comparamos con lo que pasó de verdad en los tres años y es prácticamente igual. Es decir: π es el promedio a largo plazo. Si escogemos un día al azar, hay unas 29 de 100 posibilidades de que esté seco.
 
 ### 7. Ítem 4: el clima se olvida en 2 días · GG · 60 s
 
@@ -55,7 +55,7 @@ Presentación corta, solo del caso real (10 diapositivas, unos 10 minutos más l
 | 2 | Mostrar la gráfica, las tarjetas y las tablas | "Estos son los conteos y la matriz que salió de ellos." |
 | 3 | Cambiar **Lluvia fuerte desde** de 10 a 20 mm | "Si cambiamos qué cuenta como aguacero, todo se recalcula." Volver a 10. |
 | 4 | En la última sección, elegir **Lluvia fuerte**, luego **Seco** | "Después de un aguacero la realidad queda arriba; después de un día seco, abajo." |
-| 5 | Abrir un recuadro **"En palabras sencillas"** si hace falta | Leerlo si la profesora pide explicar algo. |
+| 5 | Abrir un recuadro **"En resumen"** si hace falta | Leerlo si la profesora pide explicar algo. |
 
 > **Ambos:** Muchas gracias. ¿Tienen alguna pregunta?
 

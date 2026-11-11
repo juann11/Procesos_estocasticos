@@ -38,7 +38,7 @@ def test_explica_como_se_conecta_con_el_taller():
     assert any("taller" in e.label for e in app.expander)
 
 
-def test_cada_paso_tiene_una_explicacion_sencilla():
+def test_cada_paso_tiene_un_resumen():
     app = abrir()
-    sencillas = [i.value for i in app.info if i.value.startswith("**En palabras sencillas:**")]
-    assert len(sencillas) == 6
+    resumenes = [i.value for i in app.info if i.value.startswith("**En resumen:**")]
+    assert len(resumenes) == 6

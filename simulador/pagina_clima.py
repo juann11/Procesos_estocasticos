@@ -24,8 +24,8 @@ NARANJA = "#eb6834"
 DIAS_COMPARACION = 10
 
 
-def en_palabras_sencillas(texto: str):
-    st.info(f"**En palabras sencillas:** {texto}", icon=":material/lightbulb:")
+def en_resumen(texto: str):
+    st.info(f"**En resumen:** {texto}", icon=":material/lightbulb:")
 
 st.set_page_config(page_title="Caso real: clima de Medellín", layout="wide")
 st.title("Caso real: el clima de Medellín")
@@ -81,11 +81,7 @@ st.altair_chart(
     .properties(height=220),
     width="stretch",
 )
-en_palabras_sencillas(
-    "imagina un calendario de tres años en el que pintas cada día según cuánto llovió: naranja si estuvo seco, "
-    "azul claro si llovió poquito y azul oscuro si cayó un aguacero. Eso hicimos: convertimos los milímetros de "
-    "lluvia de cada día en uno de tres tipos de día. Cada barra de la gráfica es un día real de Medellín."
-)
+en_resumen("cada uno de los días de estos tres años se convirtió en un tipo de día: seco, lluvia ligera o lluvia fuerte.")
 
 try:
     P, conteos = estimar_matriz(datos["estado"].to_numpy(), 3)
@@ -119,20 +115,15 @@ st.markdown(
     f"Ejemplo de lectura: después de un día de lluvia fuerte, el día siguiente fue también de lluvia fuerte "
     f"el **{100 * P[2, 2]:.1f} %** de las veces, y seco solo el **{100 * P[2, 0]:.1f} %**."
 )
-en_palabras_sencillas(
-    "la matriz es una tabla de «qué suele venir después». Cada fila responde una pregunta: si hoy fue así, "
-    "¿qué tan probable es cada tipo de día mañana? Para llenarla no inventamos nada: revisamos los tres años "
-    f"y contamos. Por ejemplo, de los {conteos[2].sum()} aguaceros, {conteos[2, 2]} fueron seguidos por otro aguacero."
+en_resumen(
+    "la matriz dice qué tan probable es cada tipo de día mañana según cómo fue hoy. Sale de contar: "
+    f"de {conteos[2].sum()} aguaceros, {conteos[2, 2]} fueron seguidos por otro."
 )
 
 st.header("3. ¿Se alcanza un estado estable? (ítem 2)")
 if analisis.converge:
     st.success("Sí, se alcanza: los tres tipos de día se comunican entre sí y la cadena es aperiódica.")
-    en_palabras_sencillas(
-        "la pregunta es si el clima termina siguiendo un patrón estable a largo plazo, sin importar cómo empezó. "
-        "La respuesta es sí: desde cualquier tipo de día se puede llegar a cualquier otro, y no hay un ciclo obligado "
-        "como «seco, lluvia, seco, lluvia» que se repita para siempre. Por eso existe un único reparto final."
-    )
+    en_resumen("el clima no está atado a un ciclo fijo, así que a largo plazo se estabiliza sin importar cómo empezó.")
 else:
     st.warning("No se alcanza un estado estable con estos umbrales.")
     st.stop()
@@ -166,11 +157,7 @@ st.markdown(
     f"A largo plazo, Medellín tiene **{100 * pi[0]:.1f} %** de días secos, **{100 * pi[1]:.1f} %** de lluvia ligera "
     f"y **{100 * pi[2]:.1f} %** de lluvia fuerte. Coincide con lo que pasó de verdad en estos tres años."
 )
-en_palabras_sencillas(
-    "π es el «promedio a largo plazo». Si escoges un día cualquiera de Medellín al azar, sin saber nada más, "
-    f"hay más o menos {round(100 * pi[0])} de 100 posibilidades de que esté seco. Que las barras azules (lo que dice la "
-    "matriz) y las naranjas (lo que pasó de verdad) sean casi iguales muestra que la matriz describe bien el clima."
-)
+en_resumen(f"a largo plazo, unos {round(100 * pi[0])} de cada 100 días son secos, y eso coincide con lo que pasó de verdad.")
 
 st.header("5. ¿En cuántos días se olvida el clima de hoy? (ítem 4)")
 if mezcla.t_mix is not None:
@@ -191,12 +178,7 @@ st.altair_chart(
     width="stretch",
 )
 dias_memoria = "unos días" if mezcla.t_mix is None else f"{mezcla.t_mix} días"
-en_palabras_sencillas(
-    "el mixing time es cuánto «dura la memoria» del clima. Si hoy cayó un aguacero, mañana es más probable que "
-    f"llueva, así que saber lo de hoy sirve. Pero después de {dias_memoria} esa información ya casi no ayuda: "
-    "predecir sabiendo cómo estuvo hoy da casi lo mismo que adivinar con el promedio. La línea azul mide esa "
-    "diferencia, y cuando baja de la línea punteada (ε) decimos que el clima de hoy ya se olvidó."
-)
+en_resumen(f"después de {dias_memoria}, saber cómo estuvo hoy ya casi no ayuda a predecir el clima.")
 
 st.header("6. El modelo frente a lo que pasó de verdad")
 hoy = st.selectbox("Si hoy fue un día de…", ESTADOS, index=2)
@@ -229,18 +211,12 @@ st.markdown(
 diferencia = validacion.pivot(index="k días después", columns="Fuente", values="Probabilidad").iloc[1:]
 diferencia = float((diferencia["Realidad"] - diferencia["Modelo de Markov"]).mean())
 if diferencia > 0.02:
-    lectura = ("La naranja se queda más arriba: después de un aguacero siguen cayendo más aguaceros de los que cree "
-               "el modelo, porque la temporada de lluvias dura semanas.")
+    lectura = "después de un aguacero sigue lloviendo más de lo que predice el modelo: las temporadas de lluvia duran más de lo que la cadena cree."
 elif diferencia < -0.02:
-    lectura = ("La naranja se queda más abajo: después de un día seco caen menos aguaceros de los que cree el modelo, "
-               "porque la temporada seca dura semanas.")
+    lectura = "después de un día seco llueve menos de lo que predice el modelo: las temporadas secas duran más de lo que la cadena cree."
 else:
-    lectura = "Aquí las dos líneas casi coinciden: desde este tipo de día el modelo acierta bien."
-en_palabras_sencillas(
-    "pusimos a prueba el modelo. Buscamos en los datos todos los días como el elegido y miramos qué pasó de verdad "
-    "1, 2, 3… días después. La línea azul es lo que predice la cadena y la naranja lo que pasó en la realidad. "
-    f"{lectura} El modelo solo mira el día anterior, así que no ve las temporadas: el clima real «se acuerda» más."
-)
+    lectura = "desde este tipo de día el modelo acierta bien."
+en_resumen(lectura)
 st.info(
     "**Conclusión:** la cadena de Markov solo mira el día anterior, así que olvida rápido. "
     "El clima real tiene temporadas de lluvia y temporadas secas que duran semanas, y por eso recuerda más "
