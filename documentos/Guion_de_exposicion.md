@@ -3,7 +3,7 @@
 Qué decir en cada diapositiva, en el orden de la presentación. Está escrito para leerlo en voz alta o repasarlo antes; no hace falta memorizarlo palabra por palabra, sino la idea de cada bloque.
 
 - **JJ** = Juan José Ospina · **GG** = Geronimo Gaviria
-- Duración estimada: unos 20 minutos de exposición y 5 de demo. Los anexos (25 y 26) solo se usan si hay preguntas.
+- Duración estimada: unos 23 minutos de exposición y 6 de demo. Los anexos (28 y 29) solo se usan si hay preguntas.
 - Antes de empezar, la app ya debe estar abierta (ver la sección final "Cómo lanzar el programa").
 
 ---
@@ -16,7 +16,7 @@ Qué decir en cada diapositiva, en el orden de la presentación. Está escrito p
 
 ### 2. Qué hace el programa · JJ · 45 s
 
-> El programa sigue los cinco puntos del enunciado, en el mismo orden. Primero recibe la matriz y la valida. Segundo, decide si se alcanza un estado estable. Tercero, si la respuesta es sí, calcula la distribución estacionaria π. Cuarto, mide el mixing time para la tolerancia ε que elija el usuario. Y quinto, nuestra funcionalidad particular: simula la cadena y compara el resultado del azar con la teoría.
+> El programa sigue los cinco puntos del enunciado, en el mismo orden. Primero recibe la matriz y la valida. Segundo, decide si se alcanza un estado estable. Tercero, si la respuesta es sí, calcula la distribución estacionaria π. Cuarto, mide el mixing time para la tolerancia ε que elija el usuario. Y quinto, nuestra funcionalidad particular: aplicamos todo a un caso real, el clima de Medellín, con datos de 1096 días; además, simulamos la cadena para comparar el azar con la teoría.
 >
 > Un detalle importante: si en el paso 2 la cadena no converge, el programa no sigue calculando cosas sin sentido; explica la causa y se detiene.
 
@@ -24,7 +24,7 @@ Qué decir en cada diapositiva, en el orden de la presentación. Está escrito p
 
 > Lo hicimos en Python. Usamos NumPy para el álgebra lineal y Streamlit para la interfaz web, que nos permitió tener una página interactiva sin construir un frontend aparte.
 >
-> El proyecto tiene tres partes: `app.py`, que es la interfaz; `markov.py`, donde está toda la matemática, y la carpeta de pruebas, con 48 pruebas automáticas. La decisión de diseño más importante es que la matemática no depende de la interfaz: `markov.py` no sabe que existe una página web, y por eso pudimos probar cada cálculo por separado.
+> El proyecto tiene tres partes: `app.py` y sus dos páginas, el simulador y el caso real; `markov.py`, donde está toda la matemática, y la carpeta de pruebas, con 57 pruebas automáticas. La decisión de diseño más importante es que la matemática no depende de la interfaz: `markov.py` no sabe que existe una página web, y por eso pudimos probar cada cálculo por separado.
 
 ### 4. Recorrido por la página · JJ · 45 s
 
@@ -140,11 +140,35 @@ Qué decir en cada diapositiva, en el orden de la presentación. Está escrito p
 
 > La simulación nunca llega exactamente a cero, porque tiene ruido de muestreo. Ese ruido baja como uno sobre la raíz de N: cada vez que multiplicamos los caminantes por 10, el ruido baja unas 3 veces. Con 100 caminantes la distancia es 0.056, y con 100 000 baja a 0.0016. Esto también lo podemos mostrar moviendo el control de caminantes.
 
-### 21. Cómo validamos el programa · GG · 45 s
+## Parte 4b. Caso real: el clima de Medellín (JJ)
 
-> Para asegurarnos de que el programa está bien, hicimos tres cosas. Primero, 48 pruebas automáticas, escritas antes del código: 40 para la matemática y 8 para la página. Segundo, calculamos dos cadenas a mano y coincidieron con el programa. Y tercero, para comprobar que las pruebas sirven, metimos 19 errores a propósito en el código: las pruebas detectaron 16. Los otros 3 son protecciones contra redondeo que son casi imposibles de provocar. Ese experimento además nos mostró un hueco en las pruebas del período, que corregimos.
+Esta es la parte que hace único el trabajo: el mismo método aplicado a datos reales.
 
-### 22. Alcance y límites del programa · GG · 30 s
+### 21. Caso real: ¿en cuántos días se olvida el clima de hoy? · JJ · 60 s
+
+> Como funcionalidad particular quisimos llevar el simulador a algo real. En el simulador la matriz la escribe el usuario; aquí la sacamos de datos: la lluvia diaria de Medellín de 2023 a 2025, 1096 días, de la API de clima histórico de Open-Meteo.
+>
+> Cada día lo clasificamos en uno de tres estados: seco, si llovió menos de 1 milímetro; lluvia ligera, entre 1 y 10, y lluvia fuerte, de 10 en adelante. Así, la historia del clima se vuelve una cadena de Markov, y la pregunta del taller se vuelve concreta: ¿en cuántos días se olvida el clima de hoy?
+
+### 22. Caso real: la matriz que salió de los datos · JJ · 60 s
+
+> Para estimar P contamos, para cada tipo de día, qué tipo de día vino después. Por ejemplo, después de un día de lluvia fuerte, el siguiente fue también de lluvia fuerte el 45.9 % de las veces y seco solo el 7.4 %. Eso es el ítem 1, pero con una matriz que sale de la realidad.
+>
+> Con el ítem 2 vemos que sí hay estado estable: los tres tipos de día se comunican y la cadena es aperiódica. Y el ítem 3 nos da π: a largo plazo Medellín tiene 29.4 % de días secos, 47.2 % de lluvia ligera y 23.4 % de lluvia fuerte, prácticamente lo mismo que pasó en los tres años.
+
+### 23. Caso real: el clima recuerda más que el modelo · JJ · 75 s
+
+> El ítem 4 responde la pregunta: con ε = 1/4 el mixing time es 2 días. Según la cadena, después de un par de días ya casi no importa si hoy llovió.
+>
+> Pero aquí está lo más interesante: lo comparamos con lo que pasó de verdad. Al día siguiente el modelo coincide exacto, porque P se estimó con esos pares de días. Pero 5 días después de un día de lluvia fuerte, el modelo predice 24 % de lluvia fuerte y en la realidad fue 32 %. El clima real recuerda más, porque hay temporadas de lluvia y temporadas secas que duran semanas, y una cadena que solo mira el día anterior no las capta. Entonces el mixing time del modelo es un límite inferior: el clima real tarda un poco más en olvidarse.
+>
+> Ahora Geronimo cierra con cómo validamos todo.
+
+### 24. Cómo validamos el programa · GG · 45 s
+
+> Para asegurarnos de que el programa está bien, hicimos tres cosas. Primero, 57 pruebas automáticas, escritas antes del código: 45 para la matemática y 12 para las dos páginas. Segundo, calculamos dos cadenas a mano y coincidieron con el programa. Y tercero, para comprobar que las pruebas sirven, metimos 19 errores a propósito en el código: las pruebas detectaron 16. Los otros 3 son protecciones contra redondeo que son casi imposibles de provocar. Ese experimento además nos mostró un hueco en las pruebas del período, que corregimos.
+
+### 25. Alcance y límites del programa · GG · 30 s
 
 > También tenemos claros los límites: hasta 12 estados; el grafo se dibuja hasta 8, porque con más es ilegible; el mixing time se busca hasta 100 000 pasos; ε entre 0.001 y 0.5, y la simulación hasta 1000 pasos. El programa trabaja con cadenas de estados finitos y probabilidades que no cambian con el tiempo.
 >
@@ -154,7 +178,7 @@ Qué decir en cada diapositiva, en el orden de la presentación. Está escrito p
 
 ## Parte 5. Demostración en vivo (ambos)
 
-### 23. Demostración en vivo · JJ maneja la app y GG explica · 5 min
+### 26. Demostración en vivo · JJ maneja la app y GG explica · 5 min
 
 Cambien a la ventana del navegador con la app. Sigan este orden:
 
@@ -169,6 +193,8 @@ Cambien a la ventana del navegador con la app. Sigan este orden:
 | 7 | Elegir **Periódica (2 estados)** | "Esta oscila: período 2. El programa explica que no converge y se detiene." |
 | 8 | Elegir **Dos estados absorbentes** | "Aquí hay dos clases cerradas, E1 y E3, rellenas en azul en el grafo. El resultado depende de dónde empiece." |
 | 9 | Elegir **Personalizada** | "Profesor, si quiere nos da una matriz y la probamos." |
+| 10 | En el menú de la izquierda, abrir **Caso real: clima de Medellín** | "Aquí está el mismo método con datos reales. La matriz salió de 1096 días de lluvia." Bajar hasta la última gráfica: "El modelo olvida en 2 días, pero la realidad recuerda más." |
+| 11 | Cambiar el umbral de lluvia fuerte | "Si cambiamos qué cuenta como lluvia fuerte, la matriz y π se recalculan solas." |
 
 Consejos:
 
@@ -180,22 +206,24 @@ Consejos:
 
 ## Parte 6. Cierre (ambos)
 
-### 24. Conclusiones · JJ y GG · 45 s
+### 27. Conclusiones · JJ y GG · 45 s
 
 > **JJ:** Para cerrar: el programa diagnostica si hay estado estable y, cuando no lo hay, explica por qué.
 >
 > **GG:** Calcula π y el mixing time, y lo comprobamos con casos resueltos a mano.
 >
-> **JJ:** Y verifica la teoría con una simulación independiente. Así cubrimos los cinco ítems del enunciado.
+> **JJ:** Verifica la teoría con una simulación independiente.
+>
+> **GG:** Y lo aplicamos a datos reales: el clima de Medellín se olvida en unos 2 días según el modelo, aunque en la realidad recuerda un poco más. Así cubrimos los cinco ítems del enunciado.
 >
 > **GG:** Muchas gracias. ¿Tienen alguna pregunta?
 
-### 25 y 26. Anexos · solo si preguntan
+### 28 y 29. Anexos · solo si preguntan
 
 No se presentan. Si el profesor pregunta algo que está en los anexos, vayan a esa diapositiva y respondan con ella:
 
-- **25, sobre el método:** por qué la distancia de variación total, por qué ε = 1/4, por qué d(t) no sube y la diferencia entre una cadena periódica y una reducible.
-- **26, sobre el programa:** por qué mínimos cuadrados, por qué iterar potencias, por qué semilla fija y por qué aceptar fracciones.
+- **28, sobre el método:** por qué la distancia de variación total, por qué ε = 1/4, por qué d(t) no sube y la diferencia entre una cadena periódica y una reducible.
+- **29, sobre el programa:** por qué mínimos cuadrados, por qué iterar potencias, por qué semilla fija y por qué aceptar fracciones.
 
 Las respuestas completas a 22 preguntas probables están en la [guía de exposición](Guia_de_exposicion.md), sección 4.
 
@@ -226,6 +254,6 @@ Háganlo **15 minutos antes**, no durante la exposición:
    uv run python -m pytest
    ```
 
-   Debe decir **48 passed**.
+   Debe decir **57 passed**.
 
 En Teams, compartan la pantalla completa para poder pasar entre las diapositivas y el navegador. Tengan abierto `Diapositivas.pdf` como respaldo.

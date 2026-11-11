@@ -80,26 +80,38 @@ Técnicamente se usa la fila acumulada: (0.9, 1.0). El código cuenta cuántos v
 
 Con la cadena ya mezclada, la distancia teórica es casi cero, así que lo que queda es ruido del muestreo. Este ruido baja como 1 sobre raíz de N, y raíz de 10 es aproximadamente 3.16. Por eso multiplicar los caminantes por 10 reduce el ruido cerca de 3 veces: de 0.0560 a 0.0193, a 0.0061 y a 0.0016. Se puede mostrar en vivo moviendo el control de caminantes.
 
-## 21. Cómo validamos el programa
+## 21. Caso real: ¿en cuántos días se olvida el clima de hoy?
 
-Las pruebas se escribieron antes que la lógica: 40 prueban las funciones de markov.py y 8 prueban la página con el probador de Streamlit (resumen, animación, explicaciones). Se corren con uv run pytest. Para comprobar las pruebas introdujimos 19 errores a propósito, por ejemplo cambiar max por min en d(t). Se detectaron 16. Los 3 restantes son protecciones contra redondeo con probabilidad muy baja, difíciles de provocar. Este experimento destapó un hueco real en el cálculo del período, que corregimos con dos pruebas nuevas. Las dos cadenas a mano son la regular de 2 estados y la absorbente con transitorios.
+Esta es nuestra funcionalidad particular. En el simulador la matriz la escribe el usuario; aquí la estimamos con datos reales y le aplicamos los mismos cinco ítems del taller a una pregunta concreta: ¿en cuántos días se olvida el clima de hoy en Medellín? Los datos son la lluvia diaria de 2023 a 2025 de la API de clima histórico de Open-Meteo, guardados en el proyecto para que funcione sin internet. Cada día se clasifica como seco (menos de 1 mm), lluvia ligera (de 1 a 10 mm) o lluvia fuerte (10 mm o más); 1 mm es el umbral usual de día con lluvia. Los umbrales se pueden cambiar en la app.
 
-## 22. Alcance y límites del programa
+## 22. Caso real: la matriz que salió de los datos
+
+Cómo se lee la matriz: después de un día de lluvia fuerte, el día siguiente fue también de lluvia fuerte el 45.9 % de las veces y seco solo el 7.4 %. Cada fila sale de contar transiciones reales: por ejemplo, de 257 días de lluvia fuerte con día siguiente, 118 fueron seguidos por otro día de lluvia fuerte. El ítem 2 da que sí hay estado estable: los tres tipos de día se comunican y hay autolazos, así que es aperiódica. El ítem 3 da π: a largo plazo, 29.4 % de días secos, 47.2 % de lluvia ligera y 23.4 % de lluvia fuerte, prácticamente igual a lo que pasó en los tres años.
+
+## 23. Caso real: el clima recuerda más que el modelo
+
+Ítem 4: con ε = 1/4 el mixing time es 2 días; con ε = 0.1 son 3 días y con ε = 0.01 son 6 días. Es decir, según la cadena, después de unos días ya no importa si hoy llovió. La validación con la realidad muestra algo más interesante: al día siguiente el modelo coincide exacto, porque P se estimó con esos pares de días, pero 5 días después de un día de lluvia fuerte el modelo predice 24.2 % de lluvia fuerte y en la realidad fue 31.9 %. La realidad tiene más memoria porque hay temporadas de lluvia y temporadas secas que duran semanas, y una cadena de primer orden no las capta. Conclusión: el mixing time del modelo es un límite inferior; el clima real tarda un poco más en olvidarse. Si preguntan cómo mejorarlo: con una cadena que mire dos días atrás, o separando por temporada.
+
+## 24. Cómo validamos el programa
+
+Las pruebas se escribieron antes que la lógica: 45 prueban las funciones de markov.py, incluida la estimación con datos reales, 8 prueban la página del simulador y 4 la del caso real, con el probador de Streamlit. Se corren con uv run python -m pytest. Para comprobar las pruebas introdujimos 19 errores a propósito, por ejemplo cambiar max por min en d(t). Se detectaron 16. Los 3 restantes son protecciones contra redondeo con probabilidad muy baja, difíciles de provocar. Este experimento destapó un hueco real en el cálculo del período, que corregimos con dos pruebas nuevas. Las dos cadenas a mano son la regular de 2 estados y la absorbente con transitorios.
+
+## 25. Alcance y límites del programa
 
 Conocer los límites demuestra que entendemos el programa. Si una cadena no mezcla en 100 000 pasos, el programa no inventa un número: avisa que no se alcanzó ε. Con 12 estados, 100 000 caminantes y 1000 pasos, la simulación tarda unos 8 segundos. El límite inferior de ε evita pedir distancias tan pequeñas que el redondeo del computador domine.
 
-## 23. Demostración en vivo
+## 26. Demostración en vivo
 
-Antes de exponer: abrir la app con uv run streamlit run simulador/app.py desde la carpeta del proyecto; el navegador se abre solo. El primer arranque del computador puede tardar más de 30 segundos, así que ábranla antes de empezar. El ejemplo se elige en la barra lateral, a la izquierda; ahí también está ε. Caso 1: mostrar las tarjetas de arriba, abrir un "¿Qué significa?" y darle ▶ Reproducir a la animación. Caso 2: las tarjetas dicen Período 2. Caso 3: el grafo muestra E1 y E3 rellenos en azul. Caso 4: para cambiar un valor, doble clic en la casilla; si la matriz tiene tercios, escribir 1/3 y no 0.3333. Si cambian el número de estados, la tabla se reinicia. Si sale un error rojo en la terminal que dice ConnectionResetError, es un aviso inofensivo de Python en Windows.
+Antes de exponer: abrir la app con uv run python -m streamlit run simulador/app.py desde la carpeta del proyecto; el caso real está en la segunda página del menú de la izquierda; el navegador se abre solo. El primer arranque del computador puede tardar más de 30 segundos, así que ábranla antes de empezar. El ejemplo se elige en la barra lateral, a la izquierda; ahí también está ε. Caso 1: mostrar las tarjetas de arriba, abrir un "¿Qué significa?" y darle ▶ Reproducir a la animación. Caso 2: las tarjetas dicen Período 2. Caso 3: el grafo muestra E1 y E3 rellenos en azul. Caso 4: para cambiar un valor, doble clic en la casilla; si la matriz tiene tercios, escribir 1/3 y no 0.3333. Si cambian el número de estados, la tabla se reinicia. Si sale un error rojo en la terminal que dice ConnectionResetError, es un aviso inofensivo de Python en Windows.
 
-## 24. Conclusiones
+## 27. Conclusiones
 
 Cerrar repasando que se cumplieron los cinco ítems. Preguntas probables: por qué se usa la distancia de variación total, por qué ε = 1/4, qué pasa con los estados transitorios, cómo se calcula el período, por qué mínimos cuadrados y qué diferencia hay entre la cadena periódica y la reducible. Ambos deben poder abrir markov.py y señalar analizar_cadena, _periodo y mixing_time.
 
-## 25. Anexo: preguntas sobre el método
+## 28. Anexo: preguntas sobre el método
 
 Anexo para responder preguntas. No se expone si no hace falta. Fuente de las propiedades de d(t) y ε: Levin, Peres y Wilmer, Markov Chains and Mixing Times, capítulo 4. La propiedad de ε = 1/4 dice que d(ℓ · t_mix) es menor o igual que 2 a la menos ℓ.
 
-## 26. Anexo: preguntas sobre el programa
+## 29. Anexo: preguntas sobre el programa
 
 Anexo para responder preguntas sobre decisiones de programación. Si piden ver el código, abrir simulador/markov.py. También pueden pedir correr las pruebas: el comando es uv run pytest.

@@ -2,7 +2,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.66-FF4B4B?logo=streamlit&logoColor=white)
-![Pruebas](https://img.shields.io/badge/pruebas-48%20pasando-2EA44F)
+![Pruebas](https://img.shields.io/badge/pruebas-57%20pasando-2EA44F)
 
 Aplicación web que analiza una cadena de Markov a partir de su matriz estocástica: determina si se alcanza un estado estable, calcula la distribución estacionaria y el **mixing time**, y contrasta la teoría con una simulación Monte Carlo.
 
@@ -39,9 +39,9 @@ Trabajo Final de **Procesos Estocásticos** (2026), desarrollado por Juan José 
 | 2 | Determinar si se puede alcanzar un estado estable | Sección 2 | `analizar_cadena` |
 | 3 | Si el ítem 2 es positivo, calcular y mostrar la distribución estable | Sección 3 | `distribucion_estacionaria` |
 | 4 | Calcular y mostrar el mixing time | Sección 4 | `mixing_time` |
-| 5 | Incluir una funcionalidad particular | Sección 5: simulación Monte Carlo | `simular` |
+| 5 | Incluir una funcionalidad particular | Página "Caso real: clima de Medellín" y sección 5: simulación Monte Carlo | `estimar_matriz`, `frecuencia_a_k_pasos`, `simular` |
 
-Todas las funciones están en [`simulador/markov.py`](simulador/markov.py), y la interfaz en [`simulador/app.py`](simulador/app.py).
+Todas las funciones están en [`simulador/markov.py`](simulador/markov.py). La interfaz tiene dos páginas: [`pagina_simulador.py`](simulador/pagina_simulador.py) y [`pagina_clima.py`](simulador/pagina_clima.py).
 
 **Entregables:**
 
@@ -124,7 +124,23 @@ La app muestra:
 
 ![Distribución en el paso t frente a π](documentos/imagenes/animacion.png)
 
-### Ítem 5. Funcionalidad particular: simulación Monte Carlo
+### Ítem 5. Funcionalidad particular: caso real con el clima de Medellín
+
+La funcionalidad principal lleva el simulador a datos reales. En vez de escribir la matriz a mano, **la estimamos con la lluvia diaria de Medellín** (1096 días, del 1 de enero de 2023 al 31 de diciembre de 2025, de la API de clima histórico de [Open-Meteo](https://open-meteo.com/)) y respondemos una pregunta concreta: **¿en cuántos días se olvida el clima de hoy?**
+
+| Ítem del taller | Cómo se aplica al clima |
+|---|---|
+| 1. Matriz | Cada día es un estado: seco (< 1 mm), lluvia ligera (1 a 10 mm) o lluvia fuerte (≥ 10 mm). P se estima contando qué tipo de día siguió a cada uno. |
+| 2. Estado estable | Los tres estados se comunican y la cadena es aperiódica: sí converge. |
+| 3. π | A largo plazo: 29.4 % de días secos, 47.2 % de lluvia ligera y 23.4 % de lluvia fuerte, igual a la frecuencia real. |
+| 4. Mixing time | 2 días con ε = 1/4 (3 días con ε = 0.1 y 6 con ε = 0.01). |
+| Validación | Se compara lo que predice Pᵏ con lo que pasó de verdad k días después. |
+
+**Hallazgo.** Al día siguiente el modelo coincide exacto con la realidad, pero después se separan: 5 días después de un día de lluvia fuerte, el modelo predice 24.2 % de lluvia fuerte y en la realidad fue 31.9 %. El clima real recuerda más que la cadena, porque las temporadas de lluvia duran semanas y un modelo que solo mira el día anterior no las capta. El mixing time del modelo es un límite inferior.
+
+Los datos están guardados en [`datos/clima_medellin.csv`](datos/clima_medellin.csv), así que la app funciona sin internet, y se pueden volver a descargar con `uv run python datos/descargar_clima.py`.
+
+### Ítem 5 (complemento). Simulación Monte Carlo
 
 Además del cálculo exacto, el programa simula la cadena con N caminantes:
 
@@ -152,7 +168,7 @@ Por lo tanto, t<sub>mix</sub>(1/4) = 2, igual que el resultado del programa. Est
 
 ## Validación
 
-- **48 pruebas automáticas** escritas antes del código: 40 cubren la lógica y 8 la interfaz, usando el probador de Streamlit.
+- **57 pruebas automáticas** escritas antes del código: 45 cubren la lógica, incluida la estimación con datos reales, y 12 las dos páginas, usando el probador de Streamlit.
 - **Dos cadenas calculadas a mano** que coinciden con el programa: la regular de 2 estados (mixing time 2) y la absorbente con transitorios (mixing time 5).
 - **Prueba de las pruebas:** se introdujeron 19 errores a propósito en la lógica y las pruebas detectaron 16. Los 3 restantes son protecciones contra redondeo casi imposibles de provocar.
 
@@ -172,7 +188,7 @@ uv sync
 uv run python -m streamlit run simulador/app.py
 ```
 
-El navegador se abre en `http://localhost:8501`. En la barra lateral se elige una matriz de ejemplo o una personalizada, y la tolerancia ε. Para cambiar un valor de la matriz, haz doble clic en la casilla.
+El navegador se abre en `http://localhost:8501`. En el menú de la izquierda hay dos páginas: **Simulador**, donde se elige una matriz de ejemplo o una personalizada y la tolerancia ε (para cambiar un valor, doble clic en la casilla), y **Caso real: clima de Medellín**.
 
 | Ejemplo | Resultado esperado |
 |---|---|
@@ -193,11 +209,17 @@ uv run python -m pytest
 ```
 .
 ├── simulador/
-│   ├── app.py           # Interfaz web en Streamlit
-│   └── markov.py        # Lógica: validación, clases, período, π, mixing time y simulación
+│   ├── app.py               # Menú con las dos páginas
+│   ├── pagina_simulador.py  # Simulador: matriz escrita por el usuario
+│   ├── pagina_clima.py      # Caso real: clima de Medellín
+│   └── markov.py            # Lógica: validación, clases, período, π, mixing time, estimación y simulación
+├── datos/
+│   ├── clima_medellin.csv   # Lluvia diaria de Medellín 2023-2025
+│   └── descargar_clima.py   # Script que descarga los datos
 ├── pruebas/
 │   ├── test_markov.py   # Pruebas de la lógica
-│   └── test_app.py      # Pruebas de la interfaz
+│   ├── test_app.py      # Pruebas de la página del simulador
+│   └── test_clima.py    # Pruebas de la página del caso real
 ├── documentos/
 │   ├── Reporte_especificacion.docx
 │   ├── Diapositivas.pdf
