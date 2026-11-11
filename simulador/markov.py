@@ -176,3 +176,27 @@ def grafo_dot(P, clases_cerradas: list[list[int]]) -> str:
         for i, j in zip(*np.nonzero(P))
     ]
     return "\n".join(lineas + ["}"])
+
+
+def clasificar_lluvia(lluvia_mm, ligera=1.0, fuerte=10.0) -> np.ndarray:
+    """0 = seco, 1 = lluvia ligera, 2 = lluvia fuerte, según los milímetros del día."""
+    return np.digitize(lluvia_mm, [ligera, fuerte])
+
+
+def estimar_matriz(estados, n: int) -> tuple[np.ndarray, np.ndarray]:
+    """Estima P contando cuántas veces cada estado fue seguido por cada otro al día siguiente."""
+    estados = np.asarray(estados)
+    conteos = np.zeros((n, n), dtype=int)
+    np.add.at(conteos, (estados[:-1], estados[1:]), 1)
+    totales = conteos.sum(axis=1, keepdims=True)
+    sin_datos = np.flatnonzero(totales == 0)
+    if len(sin_datos):
+        raise ValueError(f"El estado {sin_datos[0] + 1} no tiene datos para estimar su fila.")
+    return conteos / totales, conteos
+
+
+def frecuencia_a_k_pasos(estados, origen: int, k: int, n: int) -> np.ndarray:
+    """Distribución observada del estado k días después de los días que estaban en origen."""
+    estados = np.asarray(estados)
+    siguientes = estados[k:][estados[:-k] == origen]
+    return np.bincount(siguientes, minlength=n) / len(siguientes)

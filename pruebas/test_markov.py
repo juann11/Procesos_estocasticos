@@ -3,10 +3,13 @@ import pytest
 
 from markov import (
     analizar_cadena,
+    clasificar_lluvia,
     clases_comunicantes,
     distancia_tv,
     distribucion_estacionaria,
     evolucion_exacta,
+    estimar_matriz,
+    frecuencia_a_k_pasos,
     grafo_dot,
     leer_matriz,
     mixing_time,
@@ -263,3 +266,33 @@ def test_grafo_dibuja_mas_gruesas_las_transiciones_mas_probables():
     dot = grafo_dot([[0.9, 0.1], [0.5, 0.5]], [[0, 1]])
     grosor = {a: float(g) for a, g in re.findall(r"(E\d -> E\d) \[.*?penwidth=([\d.]+)", dot)}
     assert grosor["E1 -> E1"] > grosor["E1 -> E2"]
+
+
+# Caso real: estimar la cadena a partir de datos
+
+
+def test_clasifica_la_lluvia_en_seco_ligera_y_fuerte():
+    estados = clasificar_lluvia([0.0, 0.99, 1.0, 9.9, 10.0, 40.0], ligera=1.0, fuerte=10.0)
+    assert estados.tolist() == [0, 0, 1, 1, 2, 2]
+
+
+def test_estima_la_matriz_contando_transiciones():
+    P, conteos = estimar_matriz([0, 0, 1, 0, 1, 1], n=2)
+    assert conteos.tolist() == [[1, 2], [1, 1]]
+    assert P == pytest.approx(np.array([[1 / 3, 2 / 3], [0.5, 0.5]]))
+
+
+def test_matriz_estimada_es_estocastica():
+    P, _ = estimar_matriz([0, 2, 1, 1, 0, 2, 2, 0, 1], n=3)
+    assert validar_matriz(P) == []
+
+
+def test_estado_sin_datos_no_se_puede_estimar():
+    with pytest.raises(ValueError, match="estado 3"):
+        estimar_matriz([0, 1, 0, 1], n=3)
+
+
+def test_frecuencia_real_k_pasos_despues():
+    estados = [0, 1, 0, 0, 1, 1]
+    # Días en estado 0: posiciones 0, 2, 3. Un día después: 1, 0, 1
+    assert frecuencia_a_k_pasos(estados, origen=0, k=1, n=2).tolist() == pytest.approx([1 / 3, 2 / 3])
