@@ -36,3 +36,9 @@ def test_umbral_sin_datos_explica_el_problema():
 def test_explica_como_se_conecta_con_el_taller():
     app = abrir()
     assert any("taller" in e.label for e in app.expander)
+
+
+def test_cada_paso_tiene_una_explicacion_sencilla():
+    app = abrir()
+    sencillas = [i.value for i in app.info if i.value.startswith("**En palabras sencillas:**")]
+    assert len(sencillas) == 6
