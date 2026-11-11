@@ -2,7 +2,7 @@
 
 Presentación corta, solo del caso real (10 diapositivas, unos 10 minutos más la demo). Material:
 
-- [`Caso_real_diapositivas.pdf`](Caso_real_diapositivas.pdf) y [`Caso_real_diapositivas.pptx`](Caso_real_diapositivas.pptx).
+- [`Caso_real_diapositivas.pptx`](Caso_real_diapositivas.pptx), con las notas del orador.
 - La app, en la página **Caso real: clima de Medellín** del menú de la izquierda.
 
 **JJ** = Juan José Ospina · **GG** = Geronimo Gaviria

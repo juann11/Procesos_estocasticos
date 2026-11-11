@@ -49,7 +49,8 @@ Todas las funciones están en [`simulador/markov.py`](simulador/markov.py). La i
 |---|---|
 | Reporte de especificación | [`documentos/Reporte_especificacion.docx`](documentos/Reporte_especificacion.docx) |
 | Programa | Este repositorio |
-| Exposición | [`documentos/Diapositivas.pdf`](documentos/Diapositivas.pdf) y [`documentos/Guia_de_exposicion.md`](documentos/Guia_de_exposicion.md) |
+| Exposición | [`documentos/Diapositivas.pptx`](documentos/Diapositivas.pptx) y [`documentos/Guion_de_exposicion.md`](documentos/Guion_de_exposicion.md) |
+| Exposición del caso real | [`documentos/Caso_real_diapositivas.pptx`](documentos/Caso_real_diapositivas.pptx) y [`documentos/Guion_caso_real.md`](documentos/Guion_caso_real.md) |
 
 ## Qué es el mixing time
 
@@ -222,10 +223,10 @@ uv run python -m pytest
 │   └── test_clima.py    # Pruebas de la página del caso real
 ├── documentos/
 │   ├── Reporte_especificacion.docx
-│   ├── Diapositivas.pdf
-│   ├── Notas_del_orador.md
-│   ├── Guia_de_exposicion.md
-│   ├── Guion_de_exposicion.md
+│   ├── Diapositivas.pptx              # Presentación completa (con notas del orador)
+│   ├── Guion_de_exposicion.md         # Qué decir en cada diapositiva
+│   ├── Caso_real_diapositivas.pptx    # Presentación solo del caso real
+│   ├── Guion_caso_real.md             # Guion del caso real
 │   └── imagenes/        # Capturas usadas en este README
 ├── .streamlit/config.toml   # Tema y fuentes de la interfaz
 └── pyproject.toml
@@ -248,10 +249,8 @@ El programa trabaja con cadenas de estados finitos y probabilidades de transici�
 ## Documentación
 
 - [Reporte de especificación](documentos/Reporte_especificacion.docx)
-- [Diapositivas](documentos/Diapositivas.pdf)
-- [Notas del orador](documentos/Notas_del_orador.md)
-- [Guía de exposición](documentos/Guia_de_exposicion.md)
-- [Guion de exposición](documentos/Guion_de_exposicion.md): qué decir en cada diapositiva
+- [Diapositivas](documentos/Diapositivas.pptx) y su [guion](documentos/Guion_de_exposicion.md)
+- [Diapositivas del caso real](documentos/Caso_real_diapositivas.pptx) y su [guion](documentos/Guion_caso_real.md)
 
 ## Referencias
 

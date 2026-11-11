@@ -225,7 +225,7 @@ No se presentan. Si el profesor pregunta algo que está en los anexos, vayan a e
 - **28, sobre el método:** por qué la distancia de variación total, por qué ε = 1/4, por qué d(t) no sube y la diferencia entre una cadena periódica y una reducible.
 - **29, sobre el programa:** por qué mínimos cuadrados, por qué iterar potencias, por qué semilla fija y por qué aceptar fracciones.
 
-Las respuestas completas a 22 preguntas probables están en la [guía de exposición](Guia_de_exposicion.md), sección 4.
+Las notas del orador de cada diapositiva, dentro del PowerPoint, tienen más detalle para responder.
 
 ---
 
@@ -256,4 +256,4 @@ Háganlo **15 minutos antes**, no durante la exposición:
 
    Debe decir **57 passed**.
 
-En Teams, compartan la pantalla completa para poder pasar entre las diapositivas y el navegador. Tengan abierto `Diapositivas.pdf` como respaldo.
+En Teams, compartan la pantalla completa para poder pasar entre las diapositivas y el navegador. Tengan abierto `Diapositivas.pptx` como respaldo.
