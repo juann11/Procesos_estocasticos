@@ -203,6 +203,7 @@ uv run python -m pytest
 │   ├── Diapositivas.pdf
 │   ├── Notas_del_orador.md
 │   ├── Guia_de_exposicion.md
+│   ├── Guion_de_exposicion.md
 │   └── imagenes/        # Capturas usadas en este README
 ├── .streamlit/config.toml   # Tema y fuentes de la interfaz
 └── pyproject.toml
@@ -228,6 +229,7 @@ El programa trabaja con cadenas de estados finitos y probabilidades de transici�
 - [Diapositivas](documentos/Diapositivas.pdf)
 - [Notas del orador](documentos/Notas_del_orador.md)
 - [Guía de exposición](documentos/Guia_de_exposicion.md)
+- [Guion de exposición](documentos/Guion_de_exposicion.md): qué decir en cada diapositiva
 
 ## Referencias
 

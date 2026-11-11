@@ -6,6 +6,7 @@ Material:
 
 - `documentos/Diapositivas.pdf`: la presentación.
 - `documentos/Notas_del_orador.md`: qué decir en cada diapositiva.
+- `documentos/Guion_de_exposicion.md`: el texto para decir en cada diapositiva.
 - Esta guía: preparación, demo y preguntas.
 
 ## 1. Antes de empezar (15 minutos antes)
