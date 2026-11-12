@@ -1,11 +1,14 @@
 """Experimento: ¿cuántas veces hay que barajar un mazo para que quede bien mezclado?"""
+import json
 from collections import Counter, defaultdict
 from math import factorial
+from pathlib import Path
 
 import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 from markov import (
     analizar_cadena,
@@ -17,7 +20,9 @@ from markov import (
     leer_experimento,
     matriz_riffle,
     mixing_time,
+    probabilidades_detective,
     riffle,
+    ronda_detective,
     secuencias_ascendentes,
     simular_experimento,
     subidas,
@@ -29,6 +34,10 @@ GRIS = "#475569"
 EPSILON = 0.25
 MAX_BARAJADAS = 12
 CARTAS_DEMO = 10
+ANIMACION = (Path(__file__).parent / "riffle_animado.html").read_text(encoding="utf-8")
+# Juego del detective: 8 barajadas dejan 10 cartas prácticamente mezcladas (distancia 0.016)
+OPCIONES_DETECTIVE = [1, 2, 3, 8]
+RONDAS_DETECTIVE = 5
 # Fondos claros con texto oscuro: cada secuencia ascendente tiene su color y además su número
 COLORES_SECUENCIA = ["#DBEAFE", "#FDE2CF", "#D1FAE5", "#FEF3C7", "#EDE9FE", "#FCE7F3", "#E0F2FE", "#ECFCCB"]
 BORDES_SECUENCIA = ["#2a78d6", "#C2410C", "#047857", "#B45309", "#6D28D9", "#BE185D", "#0369A1", "#4D7C0F"]
@@ -110,14 +119,11 @@ botones.button("Ordenar de nuevo", key="reiniciar_demo", on_click=reiniciar_demo
 
 if estado.demo_ultimo:
     antes, corte = estado.demo_ultimo
-    montones = st.columns(2)
-    montones[0].caption(f"Montón de arriba ({corte} cartas)")
-    montones[0].markdown(cartas_html(antes[:corte], con_secuencias=False), unsafe_allow_html=True)
-    montones[1].caption(f"Montón de abajo ({len(antes) - corte} cartas)")
-    montones[1].markdown(cartas_html(antes[corte:], con_secuencias=False), unsafe_allow_html=True)
-
-st.caption("El mazo ahora, de arriba abajo. Cada color (S1, S2…) es una secuencia ascendente:")
-st.markdown(cartas_html(estado.demo_mazo), unsafe_allow_html=True)
+    datos = {"antes": antes, "corte": corte, "despues": estado.demo_mazo, "barajadas": estado.demo_barajadas}
+    components.html(ANIMACION.replace("__DATOS__", json.dumps(datos)), height=500)
+else:
+    st.caption("El mazo ahora, de arriba abajo. Cada color (S1, S2…) es una secuencia ascendente:")
+    st.markdown(cartas_html(estado.demo_mazo), unsafe_allow_html=True)
 contador = st.columns(3)
 contador[0].metric("Barajadas hechas", estado.demo_barajadas, border=True)
 contador[1].metric("Secuencias ascendentes", subidas(estado.demo_mazo), border=True)
@@ -131,8 +137,92 @@ en_resumen(
     "y hacen falta varios."
 )
 
-# 2. Mazo pequeño: la matriz completa con el mismo simulador
-st.header("2. Un mazo pequeño como cadena de Markov")
+# 2. Juego: adivinar cuántas barajadas tiene un mazo
+st.header("2. Juego: el detective de barajadas")
+st.markdown(
+    f"Te mostramos un mazo de {CARTAS_DEMO} cartas y tú adivinas **cuántas veces lo barajaron**. La pista son los "
+    "colores: cada riffle como mucho **duplica** las secuencias ascendentes."
+)
+estado.setdefault("detective_ronda", None)
+estado.setdefault("detective_jugadas", 0)
+estado.setdefault("detective_aciertos", 0)
+estado.setdefault("detective_ultima", None)
+if estado.detective_ronda is None:
+    estado.detective_ronda = ronda_detective(CARTAS_DEMO, OPCIONES_DETECTIVE, np.random.default_rng())
+
+
+def nombre_opcion(k: int) -> str:
+    return "Bien mezclado" if k == OPCIONES_DETECTIVE[-1] else barajadas(k)
+
+
+def adivinar(k: int):
+    real, orden = estado.detective_ronda
+    estado.detective_jugadas += 1
+    estado.detective_aciertos += k == real
+    estado.detective_ultima = {"elegida": k, "real": real, "orden": orden}
+
+
+def siguiente_mazo():
+    estado.detective_ultima = None
+    estado.detective_ronda = ronda_detective(CARTAS_DEMO, OPCIONES_DETECTIVE, np.random.default_rng())
+
+
+def jugar_otra_vez():
+    estado.detective_jugadas = 0
+    estado.detective_aciertos = 0
+    siguiente_mazo()
+
+
+ultima = estado.detective_ultima
+marcador = st.columns(2)
+marcador[0].metric("Ronda", f"{estado.detective_jugadas + (ultima is None)} de {RONDAS_DETECTIVE}", border=True)
+marcador[1].metric("Aciertos", estado.detective_aciertos, border=True)
+
+if ultima is None:
+    st.markdown(cartas_html(estado.detective_ronda[1]), unsafe_allow_html=True)
+    st.caption(
+        "Pista: con 1 barajada salen máximo 2 secuencias, con 2 máximo 4 y con 3 máximo 8. Un mazo bien mezclado "
+        f"puede tener cualquier cantidad; en promedio {(CARTAS_DEMO + 1) / 2:g}."
+    )
+    st.markdown("**¿Cuántas veces lo barajaron?**")
+    respuestas = st.container(horizontal=True)
+    for k in OPCIONES_DETECTIVE:
+        respuestas.button(nombre_opcion(k), key=f"adivinar_{k}", on_click=adivinar, args=(k,), width="content")
+else:
+    st.markdown(cartas_html(ultima["orden"]), unsafe_allow_html=True)
+    s_mazo = subidas(ultima["orden"])
+    if ultima["elegida"] == ultima["real"]:
+        st.success(f"¡Bien! Era **{nombre_opcion(ultima['real']).lower()}**. El mazo tenía {s_mazo} secuencias.",
+                   icon=":material/check_circle:")
+    else:
+        st.error(
+            f"Era **{nombre_opcion(ultima['real']).lower()}**, no {nombre_opcion(ultima['elegida']).lower()}. "
+            f"El mazo tenía {s_mazo} secuencias.", icon=":material/cancel:",
+        )
+    chances = probabilidades_detective(CARTAS_DEMO, s_mazo, OPCIONES_DETECTIVE)
+    st.markdown(
+        f"Con {s_mazo} secuencias, esto es lo que diría la matemática: "
+        + " · ".join(f"{nombre_opcion(k)} **{p:.0%}**" for k, p in zip(OPCIONES_DETECTIVE, chances))
+    )
+    if max(chances) < 0.8:
+        st.caption("Ni el mejor detective puede estar seguro: con tantas secuencias, varias respuestas son posibles. "
+                   "Entre más barajadas, más se pierde la pista del orden inicial.")
+    if estado.detective_jugadas < RONDAS_DETECTIVE:
+        st.button("Siguiente mazo", key="siguiente_mazo", on_click=siguiente_mazo, type="primary",
+                  icon=":material/arrow_forward:")
+    else:
+        t_mix_demo = next(k for k in range(1, MAX_BARAJADAS + 1) if distancia_barajado(CARTAS_DEMO, k) <= EPSILON)
+        st.subheader(f"Acertaste {estado.detective_aciertos} de {RONDAS_DETECTIVE}")
+        en_resumen(
+            "con 1 o 2 barajadas el mazo todavía «recuerda» su orden inicial y se adivina fácil. Desde 3 ya cuesta "
+            "distinguirlo de uno bien mezclado. Ese momento en que el mazo olvida de dónde viene es justo el "
+            f"**mixing time**: con {CARTAS_DEMO} cartas son {barajadas(t_mix_demo)} (ε = {EPSILON:g})."
+        )
+        st.button("Jugar otra vez", key="jugar_otra_vez", on_click=jugar_otra_vez, type="primary",
+                  icon=":material/replay:")
+
+# 3. Mazo pequeño: la matriz completa con el mismo simulador
+st.header("3. Un mazo pequeño como cadena de Markov")
 n_pequeno = st.number_input("Cartas del mazo pequeño", min_value=3, max_value=5, value=4, key="mazo_pequeno")
 P, ordenes = matriz_riffle(n_pequeno)
 analisis = analizar_cadena(P)
@@ -152,8 +242,8 @@ en_resumen(
     f"con {n_pequeno} cartas basta con {barajadas(mezcla.t_mix)} para que cualquier orden sea casi igual de probable."
 )
 
-# 3. Mazo completo: fórmula exacta de Bayer y Diaconis
-st.header("3. Un mazo de 52 cartas")
+# 4. Mazo completo: fórmula exacta de Bayer y Diaconis
+st.header("4. Un mazo de 52 cartas")
 distancias_52 = [distancia_barajado(52, k) for k in range(1, MAX_BARAJADAS + 1)]
 t_mix_52 = next(k for k, d in enumerate(distancias_52, 1) if d <= EPSILON)
 completo = st.columns(3)
@@ -181,8 +271,8 @@ en_resumen(
     "«7 barajadas»."
 )
 
-# 4. Experimento con un mazo real
-st.header("4. Nuestro experimento: ¿barajamos como el modelo?")
+# 5. Experimento con un mazo real
+st.header("5. Nuestro experimento: ¿barajamos como el modelo?")
 st.markdown(
     "Tomen cartas numeradas en orden (por ejemplo, del as al 10), háganles una cantidad de riffles y registren cómo "
     "quedó el mazo. Repitan varias veces: **entre más intentos, más confiable el resultado.**"

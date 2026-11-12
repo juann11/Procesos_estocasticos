@@ -11,7 +11,9 @@ from markov import (
     leer_experimento,
     matriz_riffle,
     mixing_time,
+    probabilidades_detective,
     riffle,
+    ronda_detective,
     secuencias_ascendentes,
     simular_experimento,
     subidas,
@@ -129,6 +131,29 @@ def test_datos_simulados_se_leen_como_un_experimento():
     assert texto == simular_experimento(10, [1, 2], intentos=5, semilla=1)
 
 
+# Juego del detective: adivinar cuántas barajadas tiene un mazo
+
+
+def test_ronda_del_detective_baraja_el_numero_de_veces_que_dice():
+    rng = np.random.default_rng(3)
+    for _ in range(20):
+        k, orden = ronda_detective(10, [1, 2, 3, 8], rng)
+        assert k in (1, 2, 3, 8)
+        assert sorted(orden) == list(range(1, 11))
+        assert subidas(orden) <= 2 ** k
+
+
+def test_con_tres_secuencias_no_puede_ser_una_barajada():
+    probabilidades = probabilidades_detective(10, 3, [1, 2, 3, 8])
+    assert probabilidades[0] == 0
+    assert sum(probabilidades) == pytest.approx(1)
+
+
+def test_con_dos_secuencias_lo_mas_probable_es_una_barajada():
+    probabilidades = probabilidades_detective(10, 2, [1, 2, 3, 8])
+    assert max(probabilidades) == probabilidades[0]
+
+
 # Página del experimento
 
 
@@ -181,3 +206,21 @@ def test_datos_simulados_dejan_probar_al_instante():
     app.button(key="datos_simulados").click().run()
     assert "quedó como con" in textos(app.markdown)
     assert "simulad" in textos(app.warning)
+
+
+def test_adivinar_en_el_juego_cuenta_la_jugada_y_explica():
+    app = abrir()
+    app.button(key="adivinar_1").click().run()
+    assert app.session_state["detective_jugadas"] == 1
+    assert "secuencias" in textos(app.success) + textos(app.error)
+
+
+def test_al_terminar_las_cinco_rondas_explica_el_mixing_time():
+    app = abrir()
+    for ronda in range(5):
+        app.button(key="adivinar_8").click().run()
+        if ronda < 4:
+            app.button(key="siguiente_mazo").click().run()
+    assert "mixing time" in textos(app.info)
+    app.button(key="jugar_otra_vez").click().run()
+    assert app.session_state["detective_jugadas"] == 0

@@ -308,3 +308,18 @@ def simular_experimento(n: int, barajadas, intentos: int, semilla=None) -> str:
                 mazo, _ = riffle(mazo, rng)
             lineas.append(f"{k}: " + " ".join(map(str, mazo)))
     return "\n".join(lineas)
+
+
+def ronda_detective(n: int, opciones, rng) -> tuple[int, list[int]]:
+    """Una ronda del juego: elige al azar cuántas barajadas hacer y devuelve el mazo resultante."""
+    k = int(rng.choice(opciones))
+    mazo = list(range(1, n + 1))
+    for _ in range(k):
+        mazo, _ = riffle(mazo, rng)
+    return k, mazo
+
+
+def probabilidades_detective(n: int, secuencias: int, opciones) -> list[float]:
+    """Probabilidad de cada número de barajadas sabiendo cuántas secuencias ascendentes tiene el mazo (Bayes, todas igual de probables al inicio)."""
+    verosimilitud = np.array([distribucion_subidas(n, k)[secuencias - 1] for k in opciones])
+    return list(verosimilitud / verosimilitud.sum())

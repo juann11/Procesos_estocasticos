@@ -1,0 +1,148 @@
+<!-- Riffle animado paso a paso. pagina_cartas.py reemplaza __DATOS__ con {antes, corte, despues, barajadas}. -->
+<style>
+  :root { --tinta:#0F172A; --suave:#475569; --azul:#2a78d6; --naranja:#C2410C; --linea:#CBD5E1; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"IBM Plex Sans", system-ui, sans-serif; color:var(--tinta); background:transparent; }
+  .mesa { position:relative; height:290px; border:1px solid var(--linea); border-radius:12px; background:#F8FAFC; overflow:hidden; }
+  .rotulo { position:absolute; left:12px; font-size:12px; color:var(--suave); }
+  .carta { position:absolute; width:var(--w); height:var(--h); border:2px solid #94A3B8; border-radius:8px; background:#fff;
+           display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:600; font-size:18px;
+           transition:transform .55s cubic-bezier(.2,.8,.2,1), background-color .4s, border-color .4s; will-change:transform; }
+  .carta small { font-size:10px; font-weight:500; color:#334155; }
+  .arriba { border-color:var(--azul); }
+  .abajo { border-color:var(--naranja); }
+  .narrador { margin-top:10px; min-height:66px; padding:10px 14px; border-left:4px solid var(--azul); background:#EFF6FF;
+              border-radius:6px; font-size:15px; line-height:1.45; }
+  .barra { display:flex; height:22px; border-radius:6px; overflow:hidden; margin-top:8px; font-size:12px; color:#fff; font-weight:600; }
+  .barra div { display:flex; align-items:center; justify-content:center; transition:width .4s; white-space:nowrap; overflow:hidden; }
+  .controles { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; align-items:center; }
+  button { font:inherit; font-size:14px; padding:7px 14px; border-radius:8px; border:1px solid var(--linea); background:#fff; cursor:pointer; color:var(--tinta); }
+  button:hover:not(:disabled) { border-color:var(--azul); }
+  button:active:not(:disabled) { transform:scale(.97); }
+  button.principal { background:var(--tinta); color:#fff; border-color:var(--tinta); }
+  button:disabled { opacity:.45; cursor:default; }
+  .progreso { margin-left:auto; font-size:13px; color:var(--suave); font-variant-numeric:tabular-nums; }
+</style>
+
+<div class="mesa" id="mesa">
+  <span class="rotulo" style="top:6px">Mazo antes de barajar</span>
+  <span class="rotulo" style="top:100px" id="rotulo-montones">Los dos montones</span>
+  <span class="rotulo" style="top:194px">Mazo nuevo, de arriba abajo</span>
+</div>
+<div class="barra" id="barra" style="visibility:hidden">
+  <div id="barra-arriba" style="background:var(--azul)"></div>
+  <div id="barra-abajo" style="background:var(--naranja)"></div>
+</div>
+<div class="narrador" id="narrador"></div>
+<div class="controles">
+  <button class="principal" id="siguiente">Siguiente paso ▶</button>
+  <button id="todo">Ver todo seguido</button>
+  <button id="reiniciar">Repetir animación</button>
+  <span class="progreso" id="progreso"></span>
+</div>
+
+<script>
+const D = __DATOS__;
+const n = D.antes.length, corte = D.corte;
+const COLORES = ["#DBEAFE","#FDE2CF","#D1FAE5","#FEF3C7","#EDE9FE","#FCE7F3","#E0F2FE","#ECFCCB"];
+const BORDES = ["#2a78d6","#C2410C","#047857","#B45309","#6D28D9","#BE185D","#0369A1","#4D7C0F"];
+const mesa = document.getElementById("mesa");
+const ancho = mesa.clientWidth;
+const w = Math.min(46, Math.floor((ancho - 24) / (n + 1)) - 6), h = Math.round(w * 1.38), paso = w + 6;
+mesa.style.setProperty("--w", w + "px"); mesa.style.setProperty("--h", h + "px");
+const FILAS = [24, 118, 212];
+
+// Mismo cálculo que secuencias_ascendentes() en markov.py
+function secuencias(orden) {
+  const pos = {}; orden.forEach((c, i) => pos[c] = i);
+  const grupo = {}; let num = 1;
+  for (let v = 1; v <= n; v++) { if (v > 1 && pos[v] < pos[v - 1]) num++; grupo[v] = num; }
+  return grupo;
+}
+const grupos = secuencias(D.despues);
+const totalSecuencias = Math.max(...Object.values(grupos));
+const deArriba = new Set(D.antes.slice(0, corte));
+
+const cartas = {};
+D.antes.forEach(c => {
+  const el = document.createElement("div");
+  el.className = "carta"; el.innerHTML = c + "<small></small>";
+  mesa.appendChild(el); cartas[c] = el;
+});
+function mover(c, x, y) { cartas[c].style.transform = `translate(${x}px, ${y}px)`; }
+
+const narrador = document.getElementById("narrador");
+const barra = document.getElementById("barra");
+const pct = x => Math.round(x * 100) + "%";
+const total = n + 2;   // 0: mazo, 1: corte, 2..n+1: caídas, n+2: secuencias
+let actual = 0, temporizador = null;
+
+function dibujar(k) {
+  // Mazo antes de barajar
+  const colocadas = D.despues.slice(0, Math.max(0, k - 1));
+  D.antes.forEach((c, i) => {
+    const el = cartas[c];
+    el.className = "carta" + (k >= 1 ? (deArriba.has(c) ? " arriba" : " abajo") : "");
+    el.style.background = ""; el.style.borderColor = ""; el.querySelector("small").textContent = "";
+    if (k === 0) return mover(c, 12 + i * paso, FILAS[0]);
+    const enPila = colocadas.indexOf(c) === -1;
+    if (enPila) {
+      // Montón de arriba a la izquierda, de abajo a la derecha; las que ya cayeron se van
+      const pila = deArriba.has(c) ? D.antes.slice(0, corte) : D.antes.slice(corte);
+      const restantes = pila.filter(x => colocadas.indexOf(x) === -1);
+      const base = deArriba.has(c) ? 12 : 12 + (corte + 1) * paso;
+      mover(c, base + restantes.indexOf(c) * paso, FILAS[1]);
+    } else {
+      mover(c, 12 + colocadas.indexOf(c) * paso, FILAS[2]);
+    }
+  });
+
+  const quedanA = D.antes.slice(0, corte).filter(c => colocadas.indexOf(c) === -1).length;
+  const quedanB = (n - corte) - (colocadas.length - (corte - quedanA));
+  barra.style.visibility = (k >= 1 && k <= n && quedanA + quedanB > 0) ? "visible" : "hidden";
+
+  if (k === 0) {
+    narrador.innerHTML = D.barajadas === 1
+      ? "Este es el mazo <b>en orden</b>, del 1 al " + n + ". Dale <b>Siguiente paso</b> para ver la barajada."
+      : "Este es el mazo como quedó después de " + (D.barajadas - 1) + (D.barajadas === 2 ? " barajada" : " barajadas") + ". Ahora le hacemos una más.";
+  } else if (k === 1) {
+    narrador.innerHTML = "<b>Paso 1, el corte:</b> partimos el mazo en dos. Arriba quedan <b style='color:var(--azul)'>" + corte +
+      "</b> cartas y abajo <b style='color:var(--naranja)'>" + (n - corte) + "</b>. El corte cae al azar, casi siempre cerca de la mitad, como al lanzar " + n + " monedas.";
+  } else if (k <= n + 1) {
+    const c = D.despues[k - 2], a = quedanA + (deArriba.has(c) ? 1 : 0), b = quedanB + (deArriba.has(c) ? 0 : 1);
+    const pA = a / (a + b);
+    narrador.innerHTML = "<b>Cae la carta " + (k - 1) + " de " + n + ":</b> quedaban " + a + " arriba y " + b + " abajo, así que salía de arriba con probabilidad " +
+      a + "/" + (a + b) + " = <b>" + pct(pA) + "</b>. El montón con más cartas tiene más chance. Cayó la <b>" + c + "</b>, del montón de <b>" +
+      (deArriba.has(c) ? "arriba" : "abajo") + "</b>.";
+    document.getElementById("barra-arriba").style.width = pct(pA);
+    const pB = (100 - Math.round(pA * 100)) + "%";   // así las dos suman 100 %
+    document.getElementById("barra-abajo").style.width = pB;
+    document.getElementById("barra-arriba").textContent = a ? "Arriba " + pct(pA) : "";
+    document.getElementById("barra-abajo").textContent = b ? "Abajo " + pB : "";
+  } else {
+    D.despues.forEach(c => {
+      const g = grupos[c] - 1;
+      cartas[c].style.background = COLORES[g % COLORES.length];
+      cartas[c].style.borderColor = BORDES[g % BORDES.length];
+      cartas[c].querySelector("small").textContent = "S" + (g + 1);
+    });
+    narrador.innerHTML = "<b>Resultado:</b> las cartas de cada montón no cambiaron su orden entre ellas, solo se entrelazaron. Por eso el mazo quedó con <b>" +
+      totalSecuencias + (totalSecuencias === 1 ? " secuencia ascendente" : " secuencias ascendentes") +
+      "</b> (cada color). Un riffle como mucho <b>duplica</b> las secuencias, así que hacen falta varias barajadas para mezclar de verdad.";
+  }
+  document.getElementById("progreso").textContent = "Paso " + k + " de " + total;
+  document.getElementById("siguiente").disabled = k >= total;
+}
+
+function avanzar() { if (actual < total) dibujar(++actual); else parar(); }
+function parar() { clearInterval(temporizador); temporizador = null; document.getElementById("todo").textContent = "Ver todo seguido"; }
+document.getElementById("siguiente").onclick = () => { parar(); avanzar(); };
+document.getElementById("reiniciar").onclick = () => { parar(); actual = 0; dibujar(0); };
+document.getElementById("todo").onclick = e => {
+  if (temporizador) return parar();
+  if (actual >= total) { actual = 0; dibujar(0); }
+  e.target.textContent = "Pausar";
+  temporizador = setInterval(() => { avanzar(); if (actual >= total) parar(); }, 1100);
+};
+dibujar(0);
+</script>
