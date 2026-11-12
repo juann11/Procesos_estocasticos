@@ -11,6 +11,9 @@ from markov import (
     leer_experimento,
     matriz_riffle,
     mixing_time,
+    riffle,
+    secuencias_ascendentes,
+    simular_experimento,
     subidas,
     validar_matriz,
 )
@@ -101,6 +104,31 @@ def test_barajadas_equivalentes_reconoce_datos_del_modelo():
     assert barajadas_equivalentes(teorica, 10) == 2
 
 
+# Riffle interactivo y datos de prueba
+
+
+def test_colorea_cada_carta_con_su_secuencia_ascendente():
+    # 1, 2 forman la secuencia 1 y 3, 4, 5 la secuencia 2
+    assert secuencias_ascendentes([3, 1, 4, 2, 5]) == [2, 1, 2, 1, 2]
+    assert secuencias_ascendentes([1, 2, 3]) == [1, 1, 1]
+
+
+def test_riffle_entrelaza_dos_montones_sin_desordenarlos():
+    resultado, corte = riffle(list(range(1, 11)), np.random.default_rng(4))
+    assert sorted(resultado) == list(range(1, 11))
+    assert subidas(resultado) <= 2
+    de_arriba = [c for c in resultado if c <= corte]
+    assert de_arriba == sorted(de_arriba)
+
+
+def test_datos_simulados_se_leen_como_un_experimento():
+    texto = simular_experimento(10, [1, 2], intentos=5, semilla=1)
+    ensayos, errores = leer_experimento(texto)
+    assert errores == []
+    assert len(ensayos) == 10
+    assert texto == simular_experimento(10, [1, 2], intentos=5, semilla=1)
+
+
 # Página del experimento
 
 
@@ -110,19 +138,46 @@ def abrir():
     return app
 
 
+def textos(elementos):
+    return " ".join(e.value for e in elementos)
+
+
 def test_pagina_muestra_las_barajadas_necesarias_para_52_cartas():
     resumen = {m.label: m.value for m in abrir().metric}
     assert resumen["Barajadas para mezclar 52 cartas"] == "8"
 
 
-def test_pagina_compara_el_experimento_con_la_teoria():
+def test_boton_de_barajar_hace_un_riffle():
     app = abrir()
-    app.text_area(key="experimento").set_value("1: 3 1 4 2 5\n1: 1 4 2 5 3\n2: 2 5 1 3 4").run()
-    assert not app.exception
-    assert any("equivalen" in m.value for m in app.markdown)
+    app.button(key="barajar_demo").click().run()
+    assert app.session_state["demo_barajadas"] == 1
 
 
-def test_pagina_explica_los_errores_del_experimento():
+def test_registrar_un_intento_tocando_las_cartas():
     app = abrir()
-    app.text_area(key="experimento").set_value("1: 3 3 4 2 5").run()
-    assert "una sola vez" in " ".join(e.value for e in app.error)
+    app.number_input(key="cartas_experimento").set_value(4).run()
+    for carta in (3, 1, 4, 2):
+        app.button(key=f"carta_{carta}").click().run()
+    app.button(key="guardar_intento").click().run()
+    assert app.session_state["intentos"] == [(1, [3, 1, 4, 2])]
+
+
+def test_pegar_resultados_compara_con_la_teoria():
+    app = abrir()
+    app.text_area(key="pegar").set_value("1: 3 1 4 2 5\n1: 1 4 2 5 3\n2: 2 5 1 3 4")
+    app.button(key="agregar_pegados").click().run()
+    assert "quedó como con" in textos(app.markdown)
+
+
+def test_pegar_resultados_con_errores_los_explica():
+    app = abrir()
+    app.text_area(key="pegar").set_value("1: 3 3 4 2 5")
+    app.button(key="agregar_pegados").click().run()
+    assert "una sola vez" in textos(app.error)
+
+
+def test_datos_simulados_dejan_probar_al_instante():
+    app = abrir()
+    app.button(key="datos_simulados").click().run()
+    assert "quedó como con" in textos(app.markdown)
+    assert "simulad" in textos(app.warning)

@@ -273,3 +273,38 @@ def barajadas_equivalentes(distribucion_observada, n: int, max_barajadas: int = 
     """Número de riffles del modelo cuya distribución de secuencias ascendentes se parece más a la observada."""
     distancias = [distancia_tv(distribucion_observada, distribucion_subidas(n, k)) for k in range(1, max_barajadas + 1)]
     return int(np.argmin(distancias)) + 1
+
+
+def secuencias_ascendentes(orden) -> list[int]:
+    """A qué secuencia ascendente pertenece cada carta, en el orden del mazo (sirve para colorearlas)."""
+    posicion = {carta: i for i, carta in enumerate(orden)}
+    secuencia, numero = {}, 1
+    for v in range(1, len(orden) + 1):
+        if v > 1 and posicion[v] < posicion[v - 1]:
+            numero += 1
+        secuencia[v] = numero
+    return [secuencia[carta] for carta in orden]
+
+
+def riffle(mazo, rng) -> tuple[list, int]:
+    """Un riffle del modelo de Gilbert, Shannon y Reeds: corte binomial y cada carta cae del montón
+    elegido con probabilidad proporcional a su tamaño. Devuelve el mazo nuevo y cuántas cartas quedaron arriba."""
+    corte = int(rng.binomial(len(mazo), 0.5))
+    arriba, abajo, resultado = list(mazo[:corte]), list(mazo[corte:]), []
+    while arriba or abajo:
+        monton = arriba if rng.random() < len(arriba) / (len(arriba) + len(abajo)) else abajo
+        resultado.append(monton.pop(0))
+    return resultado, corte
+
+
+def simular_experimento(n: int, barajadas, intentos: int, semilla=None) -> str:
+    """Resultados de prueba con el formato «barajadas: orden», generados con el modelo."""
+    rng = np.random.default_rng(semilla)
+    lineas = []
+    for k in barajadas:
+        for _ in range(intentos):
+            mazo = list(range(1, n + 1))
+            for _ in range(k):
+                mazo, _ = riffle(mazo, rng)
+            lineas.append(f"{k}: " + " ".join(map(str, mazo)))
+    return "\n".join(lineas)
