@@ -1,8 +1,10 @@
 """Lógica de cadenas de Markov: validación, convergencia, estado estable y mixing time."""
 from collections import deque
 from dataclasses import dataclass
+import re
 from fractions import Fraction
-from math import gcd
+from itertools import permutations
+from math import comb, factorial, gcd
 
 import numpy as np
 
@@ -200,3 +202,74 @@ def frecuencia_a_k_pasos(estados, origen: int, k: int, n: int) -> np.ndarray:
     estados = np.asarray(estados)
     siguientes = estados[k:][estados[:-k] == origen]
     return np.bincount(siguientes, minlength=n) / len(siguientes)
+
+
+# Barajado de cartas: el riffle (cortar en dos montones y entrelazarlos) como cadena de Markov
+
+
+def subidas(orden) -> int:
+    """Secuencias ascendentes del mazo: 1 + veces que la carta v + 1 quedó antes que la carta v."""
+    posicion = {carta: i for i, carta in enumerate(orden)}
+    return 1 + sum(posicion[v + 1] < posicion[v] for v in range(1, len(orden)))
+
+
+def eulerianos(n: int) -> list[int]:
+    """Cuántos órdenes de n cartas tienen 1, 2, ..., n secuencias ascendentes (números eulerianos)."""
+    fila = [1]
+    for m in range(2, n + 1):
+        fila = [(i + 1) * (fila[i] if i < len(fila) else 0) + (m - i) * (fila[i - 1] if i else 0) for i in range(m)]
+    return fila
+
+
+def matriz_riffle(n: int) -> tuple[np.ndarray, list[tuple]]:
+    """Matriz de una barajada riffle (modelo de Gilbert, Shannon y Reeds) sobre los n! órdenes del mazo.
+
+    Un riffle deja el mazo igual con probabilidad (n + 1) / 2^n, en cualquier orden con dos secuencias
+    ascendentes con probabilidad 1 / 2^n y nunca en otro orden.
+    """
+    ordenes = list(permutations(range(1, n + 1)))
+    indice = {orden: i for i, orden in enumerate(ordenes)}
+    P = np.zeros((len(ordenes), len(ordenes)))
+    for i, desde in enumerate(ordenes):
+        for hacia in ordenes:
+            r = subidas([desde.index(carta) + 1 for carta in hacia])
+            P[i, indice[hacia]] = (n + 1) / 2**n if r == 1 else 1 / 2**n if r == 2 else 0
+    return P, ordenes
+
+
+def distribucion_subidas(n: int, k: int) -> np.ndarray:
+    """Probabilidad de que tras k riffles el mazo tenga 1, 2, ..., n secuencias ascendentes (Bayer y Diaconis)."""
+    a = 2**k
+    return np.array([float(Fraction(e * comb(a + n - r, n), a**n)) for r, e in enumerate(eulerianos(n), 1)])
+
+
+def distancia_barajado(n: int, k: int) -> float:
+    """Distancia de variación total exacta entre k riffles de n cartas y un mazo perfectamente mezclado."""
+    a, uniforme = 2**k, Fraction(1, factorial(n))
+    total = sum(e * abs(Fraction(comb(a + n - r, n), a**n) - uniforme) for r, e in enumerate(eulerianos(n), 1))
+    return float(total / 2)
+
+
+def leer_experimento(texto: str) -> tuple[list[tuple[int, list[int]]], list[str]]:
+    """Lee líneas «barajadas: orden», por ejemplo «2: 3 1 5 2 4». Devuelve los ensayos y los errores."""
+    ensayos, errores, n = [], [], None
+    for numero, linea in enumerate(texto.splitlines(), 1):
+        if not linea.strip():
+            continue
+        partes = re.fullmatch(r"\s*(\d+)\s*:\s*([\d\s,]+?)\s*", linea)
+        if not partes:
+            errores.append(f"Línea {numero}: escribe «barajadas: orden», por ejemplo «2: 3 1 5 2 4».")
+            continue
+        orden = [int(c) for c in re.split(r"[\s,]+", partes.group(2))]
+        n = n or len(orden)
+        if sorted(orden) != list(range(1, n + 1)):
+            errores.append(f"Línea {numero}: debe tener cada número del 1 al {n} una sola vez.")
+            continue
+        ensayos.append((int(partes.group(1)), orden))
+    return ensayos, errores
+
+
+def barajadas_equivalentes(distribucion_observada, n: int, max_barajadas: int = 12) -> int:
+    """Número de riffles del modelo cuya distribución de secuencias ascendentes se parece más a la observada."""
+    distancias = [distancia_tv(distribucion_observada, distribucion_subidas(n, k)) for k in range(1, max_barajadas + 1)]
+    return int(np.argmin(distancias)) + 1
