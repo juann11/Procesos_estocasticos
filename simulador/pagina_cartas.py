@@ -27,6 +27,10 @@ EPSILON = 0.25
 MAX_BARAJADAS = 12
 
 
+def barajadas(k: int) -> str:
+    return f"{k} barajada" if k == 1 else f"{k} barajadas"
+
+
 def en_resumen(texto: str):
     st.info(f"**En resumen:** {texto}", icon=":material/lightbulb:")
 
@@ -143,11 +147,11 @@ resultados = pd.DataFrame(filas)
 st.dataframe(resultados.round(3), hide_index=True, width="stretch")
 for fila in filas:
     st.markdown(
-        f"- Sus **{fila['Barajadas reales']}** barajadas reales equivalen a unas "
-        f"**{fila['Equivalen a barajadas del modelo']}** barajadas del modelo ({fila['Intentos']} intentos)."
+        f"- Sus **{barajadas(fila['Barajadas reales'])}** reales equivalen a unas "
+        f"**{barajadas(fila['Equivalen a barajadas del modelo'])}** del modelo ({fila['Intentos']} intentos)."
     )
 
-k_elegido = st.selectbox("Ver el detalle de", sorted(por_barajadas), format_func=lambda k: f"{k} barajadas")
+k_elegido = st.selectbox("Ver el detalle de", sorted(por_barajadas), format_func=barajadas)
 observada = np.bincount(por_barajadas[k_elegido], minlength=n + 1)[1:] / len(por_barajadas[k_elegido])
 comparacion = pd.DataFrame(
     {
